@@ -5,6 +5,8 @@ import requests
 import pandas as pd
 import plotly.express as px
 
+FORECAST_API = "http://127.0.0.1:8000/forecast"
+
 API = "http://127.0.0.1:8000/tx"   # FastAPI base URL
 
 st.title("Budgeteer – quick demo")
@@ -80,4 +82,19 @@ if not df.empty:
         hole=0.4,                     # makes it a donut
     )
     st.plotly_chart(fig2, use_container_width=True)
+
+    # ---- forecast chart -------------------------------------------
+    forecast_data = requests.get(FORECAST_API).json()
+    forecast_df = pd.DataFrame(forecast_data)
+    if not forecast_df.empty:
+        forecast_df["tx_date"] = pd.to_datetime(forecast_df["tx_date"])
+        fig3 = px.line(
+            forecast_df,
+            x="tx_date",
+            y="predicted_balance",
+            title="Forecasted balance",
+            markers=True,
+        )
+        fig3.update_xaxes(dtick="D", tickformat="%b %d")
+        st.plotly_chart(fig3, use_container_width=True)
 

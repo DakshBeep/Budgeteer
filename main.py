@@ -1,7 +1,9 @@
 # uvicorn main:app --reload
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional, List
+import pandas as pd
+from sklearn.linear_model import LinearRegression
 from fastapi import FastAPI
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from fastapi import HTTPException
@@ -49,3 +51,33 @@ def delete_tx(tx_id: int) -> None:
             raise HTTPException(status_code=404, detail="Not found")
         s.delete(tx)
         s.commit()
+
+
+@app.get("/forecast")
+def get_forecast(days: int = 7):
+    """Return predicted running balance for the next ``days`` days."""
+    with Session(engine) as s:
+        txs = s.exec(select(Tx)).all()
+        if not txs:
+            raise HTTPException(status_code=404, detail="No transactions")
+
+        df = pd.DataFrame(
+            [{"tx_date": t.tx_date, "amount": t.amount} for t in txs]
+        )
+        df = df.groupby("tx_date")["amount"].sum().sort_index()
+        running = df.cumsum()
+
+        base = running.index.min()
+        idx = (running.index - base).days
+        model = LinearRegression().fit(idx.to_frame(), running.values)
+
+        last_idx = idx.iloc[-1]
+        last_date = running.index.max()
+        future_dates = [last_date + timedelta(days=i) for i in range(1, days + 1)]
+        future_idx = [[last_idx + i] for i in range(1, days + 1)]
+        preds = model.predict(future_idx)
+
+        return [
+            {"tx_date": d.isoformat(), "predicted_balance": float(p)}
+            for d, p in zip(future_dates, preds)
+        ]
