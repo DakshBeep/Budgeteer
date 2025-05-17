@@ -27,7 +27,7 @@ Budgeteer is a demo budget tracking application combining a FastAPI backend with
 
 ## Authentication
 
-Register a user and obtain a session token via the API:
+Register a user and obtain a JWT via the API:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/register" -d "username=alice&password=secret"
@@ -35,11 +35,14 @@ curl -X POST "http://127.0.0.1:8000/login" -d "username=alice&password=secret"
 ```
 
 Include the returned token in the `Authorization` header when calling other
-endpoints:
+endpoints.  Tokens are JWTs that expire after one hour:
 
 ```bash
 curl -H "Authorization: Bearer <TOKEN>" http://127.0.0.1:8000/tx
 ```
+
+The Streamlit app automatically stores the JWT once you log in and
+includes it in subsequent requests.
 
 See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and additional instructions.
 

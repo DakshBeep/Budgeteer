@@ -52,7 +52,7 @@ with col3:
     label = st.selectbox("Category", options=categories, index=4)  # default “Food”
 recurring = st.checkbox("Recurring monthly", value=False)
 
-headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}  # JWT
 
 if st.button("Save"):
     if amount == 0:
@@ -63,17 +63,17 @@ if st.button("Save"):
             "amount": amount,
             "label": label,
             "recurring": recurring
-        }, headers=headers)
+        }, headers=auth_headers)
         st.success("Saved!")
         st.rerun()        # refresh the page
 
 # ── fetch + show data ────────────────────────────────────────
-data = requests.get(API, headers=headers).json()
+data = requests.get(API, headers=auth_headers).json()
 df = pd.DataFrame(data)
 st.dataframe(df)
 
 # show upcoming recurring transactions
-reminders = requests.get(REMINDERS, headers=headers).json()
+reminders = requests.get(REMINDERS, headers=auth_headers).json()
 reminder_df = pd.DataFrame(reminders)
 if not reminder_df.empty:
     st.subheader("Upcoming recurring transactions")
@@ -128,7 +128,7 @@ if not df.empty:
     }
     model_label = st.selectbox("Forecast model", list(model_map.keys()))
     params = {"days": forecast_days, "model": model_map[model_label]}
-    forecast_data = requests.get(FORECAST_API, params=params, headers=headers).json()
+    forecast_data = requests.get(FORECAST_API, params=params, headers=auth_headers).json()
     forecast_df = pd.DataFrame(forecast_data)
     if not forecast_df.empty:
         forecast_df["tx_date"] = pd.to_datetime(forecast_df["tx_date"])
