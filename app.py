@@ -13,7 +13,7 @@ REGISTER = "http://127.0.0.1:8000/register"
 
 st.title("Budgeteer – quick demo")
 
-if "token" not in st.session_state:
+if "jwt" not in st.session_state:
     st.sidebar.header("Account")
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
@@ -26,7 +26,7 @@ if "token" not in st.session_state:
     if st.sidebar.button("Login"):
         r = requests.post(LOGIN, data={"username": username, "password": password})
         if r.status_code == 200:
-            st.session_state["token"] = r.json()["token"]
+            st.session_state["jwt"] = r.json()["token"]
             st.experimental_rerun()
         else:
             st.sidebar.error("Login failed")
@@ -50,7 +50,7 @@ with col2:
 with col3:
     label = st.selectbox("Category", options=categories, index=4)  # default “Food”
 
-headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+headers = {"Authorization": f"Bearer {st.session_state['jwt']}"}
 
 if st.button("Save"):
     if amount == 0:
