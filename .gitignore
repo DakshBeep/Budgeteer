@@ -1,1 +1,4 @@
-.venv/__pycache__/budgeteer.db*.py[cod]
+.venv/
+__pycache__/
+budgeteer.db
+*.py[cod]
