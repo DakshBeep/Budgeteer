@@ -4,6 +4,8 @@ from datetime import date, timedelta
 from typing import Optional, List
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+import numpy as np
 from fastapi import FastAPI
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from fastapi import HTTPException
@@ -54,8 +56,17 @@ def delete_tx(tx_id: int) -> None:
 
 
 @app.get("/forecast")
-def get_forecast(days: int = 7):
-    """Return predicted running balance for the next ``days`` days."""
+def get_forecast(days: int = 7, model: str = "linear"):
+    """Return predicted running balance for the next ``days`` days.
+
+    Parameters
+    ----------
+    days: int
+        Number of future days to forecast.
+    model: str
+        Which model to use: ``"linear"``, ``"rf"`` (Random Forest) or ``"mc"``
+        (Monte Carlo).
+    """
     with Session(engine) as s:
         txs = s.exec(select(Tx)).all()
         if not txs:
@@ -68,14 +79,31 @@ def get_forecast(days: int = 7):
         running = df.cumsum()
 
         base = running.index.min()
-        idx = (running.index - base).days
-        model = LinearRegression().fit(idx.to_frame(), running.values)
+        idx = (running.index - base).days.values.reshape(-1, 1)
 
-        last_idx = idx.iloc[-1]
+        last_idx = int(idx[-1][0])
         last_date = running.index.max()
         future_dates = [last_date + timedelta(days=i) for i in range(1, days + 1)]
         future_idx = [[last_idx + i] for i in range(1, days + 1)]
-        preds = model.predict(future_idx)
+
+        if model == "rf":
+            reg = RandomForestRegressor(n_estimators=200)
+            reg.fit(idx, running.values)
+            preds = reg.predict(future_idx)
+        elif model == "mc":
+            daily = running.diff().fillna(running.iloc[0])
+            mu = float(daily.mean())
+            sigma = float(daily.std()) if daily.std() else 0.0
+            last_balance = float(running.iloc[-1])
+            sims = []
+            for _ in range(100):
+                steps = np.random.normal(mu, sigma, days)
+                sims.append(np.cumsum(steps) + last_balance)
+            preds = np.mean(sims, axis=0)
+        else:
+            reg = LinearRegression()
+            reg.fit(idx, running.values)
+            preds = reg.predict(future_idx)
 
         return [
             {"tx_date": d.isoformat(), "predicted_balance": float(p)}

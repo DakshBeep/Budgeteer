@@ -84,7 +84,16 @@ if not df.empty:
     st.plotly_chart(fig2, use_container_width=True)
 
     # ---- forecast chart -------------------------------------------
-    forecast_data = requests.get(FORECAST_API).json()
+    st.subheader("Forecast")
+    forecast_days = st.slider("Days to forecast", min_value=1, max_value=30, value=7)
+    model_map = {
+        "Linear Regression": "linear",
+        "Random Forest": "rf",
+        "Monte Carlo": "mc",
+    }
+    model_label = st.selectbox("Forecast model", list(model_map.keys()))
+    params = {"days": forecast_days, "model": model_map[model_label]}
+    forecast_data = requests.get(FORECAST_API, params=params).json()
     forecast_df = pd.DataFrame(forecast_data)
     if not forecast_df.empty:
         forecast_df["tx_date"] = pd.to_datetime(forecast_df["tx_date"])

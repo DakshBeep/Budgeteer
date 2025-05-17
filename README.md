@@ -24,4 +24,5 @@ Budgeteer is a demo budget tracking application with a FastAPI backend and a Str
 - View running balance over time
 - Pie chart summary by category
 - Simple CRUD API for transactions
+- Interactive forecasting with adjustable horizon and multiple models
 
