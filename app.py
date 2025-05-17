@@ -1,0 +1,83 @@
+# streamlit run app.py
+
+import streamlit as st
+import requests
+import pandas as pd
+import plotly.express as px
+
+API = "http://127.0.0.1:8000/tx"   # FastAPI base URL
+
+st.title("Budgeteer – quick demo")
+
+# ── input form ───────────────────────────────────────────────
+st.subheader("Add a transaction")
+
+col1, col2, col3 = st.columns(3)
+
+categories = [
+    "Monthly Income", "Financial Aid", "Tuition", "Housing", "Food",
+    "Transportation", "Books & Supplies", "Entertainment", "Personal Care",
+    "Technology", "Health & Wellness", "Miscellaneous"
+]
+
+with col1:
+    tx_date = st.date_input("Date")
+with col2:
+    amount = st.number_input("Amount", value=0.0, step=0.01, format="%.2f")
+with col3:
+    label = st.selectbox("Category", options=categories, index=4)  # default “Food”
+
+if st.button("Save"):
+    if amount == 0:
+        st.warning("Amount can’t be zero")
+    else:
+        requests.post(API, json={
+            "tx_date": str(tx_date),
+            "amount": amount,
+            "label": label
+        })
+        st.success("Saved!")
+        st.rerun()        # refresh the page
+
+# ── fetch + show data ────────────────────────────────────────
+data = requests.get(API).json()
+df = pd.DataFrame(data)
+st.dataframe(df)
+
+# ── running-balance chart ───────────────────────────────────
+if not df.empty:
+    # ensure date column is datetime & sorted
+    df["tx_date"] = pd.to_datetime(df["tx_date"])
+    df = df.sort_values("tx_date")
+
+    # running balance
+    df["running_balance"] = df["amount"].cumsum()
+
+    fig = px.line(
+        df,
+        x="tx_date",
+        y="running_balance",
+        title="Running balance over time",
+        markers=True,
+    )
+    fig.update_xaxes(dtick="D", tickformat="%b %d")   # prettier x-axis
+    st.plotly_chart(fig, use_container_width=True)
+
+    summary = (
+        df.groupby("label", as_index=False)["amount"]
+        .sum()
+        .sort_values("amount", ascending=False)
+    )
+
+    # expenses as positive values for the pie
+    summary["abs_amount"] = summary["amount"].abs()
+
+    fig2 = px.pie(
+        summary,
+        names="label",
+        values="abs_amount",
+        title="Spending / income by category",
+        hole=0.4,                     # makes it a donut
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
