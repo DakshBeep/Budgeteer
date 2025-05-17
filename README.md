@@ -12,7 +12,7 @@ Budgeteer is a demo budget tracking application combining a FastAPI backend with
 ## Setup
 
 1. Create and activate a virtual environment (optional but recommended).
-2. Install dependencies:
+2. Install dependencies (including optional forecasting libraries):
    ```bash
    pip install -r requirements.txt
    ```
@@ -43,6 +43,17 @@ curl -H "Authorization: Bearer <TOKEN>" http://127.0.0.1:8000/tx
 
 See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and additional instructions.
 
+## Forecasting
+
+The `/forecast` API now supports `catboost` and `neuralprophet` models in addition to the existing options.
+Use the Streamlit selector to choose a model. Predictions are color coded:
+
+- **Green** – you are likely within budget
+- **Yellow** – approaching your limit
+- **Red** – projected overspend
+
+These visual cues help interpret upcoming spending at a glance.
+
 ## Planned Features
 
 - Record income and expenses with categories
@@ -50,4 +61,5 @@ See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and a
 - Pie chart summary by category
 - Simple CRUD API for transactions
 - Interactive forecasting with adjustable horizon and multiple models
+- CatBoost and NeuralProphet support with red/yellow/green spend alerts
 

@@ -113,6 +113,8 @@ if not df.empty:
         "Linear Regression": "linear",
         "Random Forest": "rf",
         "Monte Carlo": "mc",
+        "CatBoost": "catboost",
+        "NeuralProphet": "neuralprophet",
     }
     model_label = st.selectbox("Forecast model", list(model_map.keys()))
     params = {"days": forecast_days, "model": model_map[model_label]}
@@ -129,4 +131,11 @@ if not df.empty:
         )
         fig3.update_xaxes(dtick="D", tickformat="%b %d")
         st.plotly_chart(fig3, use_container_width=True)
-
+        final_balance = forecast_df["predicted_balance"].iloc[-1]
+        current_balance = df["running_balance"].iloc[-1]
+        if final_balance < 0:
+            st.error("Forecast shows negative balance!")
+        elif final_balance < current_balance:
+            st.warning("Spending trend downward")
+        else:
+            st.success("Balance on track")

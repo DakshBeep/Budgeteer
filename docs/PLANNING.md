@@ -50,6 +50,7 @@ Update this list as tasks are completed or new features are planned.
    ```bash
    pip install -r requirements.txt
    ```
+   CatBoost and NeuralProphet are included for advanced forecasting.
 4. **Run the backend**
    ```bash
    uvicorn main:app --reload
@@ -58,6 +59,7 @@ Update this list as tasks are completed or new features are planned.
    ```bash
    streamlit run app.py
    ```
+   The forecast chart will show red/yellow/green warnings based on predicted balance.
 
 ## Contributing Workflow
 
