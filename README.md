@@ -33,4 +33,5 @@ See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and a
 - View running balance over time
 - Pie chart summary by category
 - Simple CRUD API for transactions
+- Interactive forecasting with adjustable horizon and multiple models
 
