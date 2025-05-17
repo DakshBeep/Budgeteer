@@ -1,8 +1,8 @@
 # uvicorn main:app --reload
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from typing import Optional, List
-from uuid import uuid4
+import jwt
 
 from passlib.context import CryptContext
 import pandas as pd
@@ -18,16 +18,26 @@ app = FastAPI()
 engine = create_engine("sqlite:///budgeteer.db", echo=False)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-session_tokens: dict[str, int] = {}
+
+JWT_SECRET = "change_me"
+JWT_ALGORITHM = "HS256"
+TOKEN_EXPIRE_SECONDS = 3600
 
 
 def get_current_user(authorization: str = Header(None)) -> User:
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing token")
     token = authorization.replace("Bearer", "").strip()
-    user_id = session_tokens.get(token)
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user_id = payload.get("user_id")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Invalid token payload")
     with Session(engine) as s:
         user = s.get(User, user_id)
         if not user:
@@ -79,8 +89,11 @@ def login(username: str, password: str):
         user = s.exec(select(User).where(User.username == username)).first()
         if not user or not pwd_context.verify(password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        token = str(uuid4())
-        session_tokens[token] = user.id
+        payload = {
+            "user_id": user.id,
+            "exp": datetime.utcnow() + timedelta(seconds=TOKEN_EXPIRE_SECONDS),
+        }
+        token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
         return {"token": token}
 
 
