@@ -8,8 +8,29 @@ import plotly.express as px
 FORECAST_API = "http://127.0.0.1:8000/forecast"
 
 API = "http://127.0.0.1:8000/tx"   # FastAPI base URL
+LOGIN = "http://127.0.0.1:8000/login"
+REGISTER = "http://127.0.0.1:8000/register"
 
 st.title("Budgeteer – quick demo")
+
+if "token" not in st.session_state:
+    st.sidebar.header("Account")
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
+    if st.sidebar.button("Register"):
+        r = requests.post(REGISTER, data={"username": username, "password": password})
+        if r.status_code == 200:
+            st.sidebar.success("Registered")
+        else:
+            st.sidebar.error("Registration failed")
+    if st.sidebar.button("Login"):
+        r = requests.post(LOGIN, data={"username": username, "password": password})
+        if r.status_code == 200:
+            st.session_state["token"] = r.json()["token"]
+            st.experimental_rerun()
+        else:
+            st.sidebar.error("Login failed")
+    st.stop()
 
 # ── input form ───────────────────────────────────────────────
 st.subheader("Add a transaction")
@@ -29,6 +50,8 @@ with col2:
 with col3:
     label = st.selectbox("Category", options=categories, index=4)  # default “Food”
 
+headers = {"Authorization": f"Bearer {st.session_state['token']}"}
+
 if st.button("Save"):
     if amount == 0:
         st.warning("Amount can’t be zero")
@@ -37,12 +60,12 @@ if st.button("Save"):
             "tx_date": str(tx_date),
             "amount": amount,
             "label": label
-        })
+        }, headers=headers)
         st.success("Saved!")
         st.rerun()        # refresh the page
 
 # ── fetch + show data ────────────────────────────────────────
-data = requests.get(API).json()
+data = requests.get(API, headers=headers).json()
 df = pd.DataFrame(data)
 st.dataframe(df)
 
@@ -93,7 +116,7 @@ if not df.empty:
     }
     model_label = st.selectbox("Forecast model", list(model_map.keys()))
     params = {"days": forecast_days, "model": model_map[model_label]}
-    forecast_data = requests.get(FORECAST_API, params=params).json()
+    forecast_data = requests.get(FORECAST_API, params=params, headers=headers).json()
     forecast_df = pd.DataFrame(forecast_data)
     if not forecast_df.empty:
         forecast_df["tx_date"] = pd.to_datetime(forecast_df["tx_date"])

@@ -25,6 +25,22 @@ Budgeteer is a demo budget tracking application combining a FastAPI backend with
    streamlit run app.py
    ```
 
+## Authentication
+
+Register a user and obtain a session token via the API:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/register" -d "username=alice&password=secret"
+curl -X POST "http://127.0.0.1:8000/login" -d "username=alice&password=secret"
+```
+
+Include the returned token in the `Authorization` header when calling other
+endpoints:
+
+```bash
+curl -H "Authorization: Bearer <TOKEN>" http://127.0.0.1:8000/tx
+```
+
 See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and additional instructions.
 
 ## Planned Features

@@ -2,16 +2,36 @@
 
 from datetime import date, timedelta
 from typing import Optional, List
+from uuid import uuid4
+
+from passlib.context import CryptContext
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Header
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from fastapi import HTTPException
 
 app = FastAPI()
 engine = create_engine("sqlite:///budgeteer.db", echo=False)
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+session_tokens: dict[str, int] = {}
+
+
+def get_current_user(authorization: str = Header(None)) -> User:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = authorization.replace("Bearer", "").strip()
+    user_id = session_tokens.get(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    with Session(engine) as s:
+        user = s.get(User, user_id)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
 
 # ------------ Models -------------------------------------------------
 class TxIn(SQLModel):                 # <- used only for incoming JSON
@@ -19,11 +39,17 @@ class TxIn(SQLModel):                 # <- used only for incoming JSON
     amount: float
     label: str
 
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    password_hash: str
+
 class Tx(SQLModel, table=True):       # <- ORM table + outward schema
     id: Optional[int] = Field(default=None, primary_key=True)
     tx_date: date
     amount: float
     label: str
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 # ---------------------------------------------------------------------
 
 @app.on_event("startup")
@@ -31,9 +57,40 @@ def init_db() -> None:
     SQLModel.metadata.create_all(engine)
 
 # ---------- Endpoints ------------------------------------------------
+
+
+@app.post("/register")
+def register(username: str, password: str):
+    with Session(engine) as s:
+        existing = s.exec(select(User).where(User.username == username)).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username taken")
+        user = User(username=username, password_hash=pwd_context.hash(password))
+        s.add(user)
+        s.commit()
+        s.refresh(user)
+        return {"id": user.id, "username": user.username}
+
+
+@app.post("/login")
+def login(username: str, password: str):
+    with Session(engine) as s:
+        user = s.exec(select(User).where(User.username == username)).first()
+        if not user or not pwd_context.verify(password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        token = str(uuid4())
+        session_tokens[token] = user.id
+        return {"token": token}
+
+
+@app.get("/me")
+def whoami(user: User = Depends(get_current_user)):
+    return {"id": user.id, "username": user.username}
+
+
 @app.post("/tx", response_model=Tx)
-def add_tx(tx_in: TxIn) -> Tx:
-    tx = Tx(**tx_in.model_dump())           # cast JSON -> ORM object
+def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
+    tx = Tx(**tx_in.model_dump(), user_id=user.id)  # cast JSON -> ORM object
     with Session(engine) as s:
         s.add(tx)
         s.commit()
@@ -41,22 +98,27 @@ def add_tx(tx_in: TxIn) -> Tx:
         return tx                           # <-- SINGLE object
 
 @app.get("/tx", response_model=List[Tx])
-def list_tx() -> List[Tx]:
+def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
     with Session(engine) as s:
-        return s.exec(select(Tx)).all()     # <-- LIST of objects
+        stmt = select(Tx).where(Tx.user_id == user.id)
+        return s.exec(stmt).all()     # <-- LIST of objects
 # ---------------------------------------------------------------------
 @app.delete("/tx/{tx_id}", status_code=204)
-def delete_tx(tx_id: int) -> None:
+def delete_tx(tx_id: int, user: User = Depends(get_current_user)) -> None:
     with Session(engine) as s:
         tx = s.get(Tx, tx_id)
-        if not tx:
+        if not tx or tx.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
         s.delete(tx)
         s.commit()
 
 
 @app.get("/forecast")
-def get_forecast(days: int = 7, model: str = "linear"):
+def get_forecast(
+    days: int = 7,
+    model: str = "linear",
+    user: User = Depends(get_current_user),
+):
     """Return predicted running balance for the next ``days`` days.
 
     Parameters
@@ -68,7 +130,7 @@ def get_forecast(days: int = 7, model: str = "linear"):
         (Monte Carlo).
     """
     with Session(engine) as s:
-        txs = s.exec(select(Tx)).all()
+        txs = s.exec(select(Tx).where(Tx.user_id == user.id)).all()
         if not txs:
             raise HTTPException(status_code=404, detail="No transactions")
 
