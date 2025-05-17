@@ -1,5 +1,7 @@
 # uvicorn main:app --reload
 
+from __future__ import annotations
+
 from datetime import date, timedelta, datetime
 import pandas as pd  # for recurring date offsets
 from typing import Optional, List
