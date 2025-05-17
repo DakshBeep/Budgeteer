@@ -1,6 +1,13 @@
 # Budgeteer
 
-Budgeteer is a demo budget tracking application with a FastAPI backend and a Streamlit UI. It lets you record basic transactions and visualize your finances.
+Budgeteer is a demo budget tracking application combining a FastAPI backend with a Streamlit UI. It lets you record basic transactions, visualize your finances and experiment with simple forecasting.
+
+## Project Structure
+
+- `main.py` – FastAPI application with database models and endpoints.
+- `app.py` – Streamlit front end for entering and viewing transactions.
+- `requirements.txt` – Python dependencies.
+- `docs/PLANNING.md` – development workflow, roles and milestones.
 
 ## Setup
 
@@ -17,6 +24,8 @@ Budgeteer is a demo budget tracking application with a FastAPI backend and a Str
    ```bash
    streamlit run app.py
    ```
+
+See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and additional instructions.
 
 ## Planned Features
 
