@@ -6,4 +6,5 @@ plotly
 pandas
 requests
 scikit-learn
+passlib[bcrypt]
 
