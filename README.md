@@ -63,3 +63,8 @@ These visual cues help interpret upcoming spending at a glance.
 - Interactive forecasting with adjustable horizon and multiple models
 - CatBoost and NeuralProphet support with red/yellow/green spend alerts
 
+
+## License
+
+Released under the [MIT License](LICENSE).
+
