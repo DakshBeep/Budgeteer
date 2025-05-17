@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from models.forecasting import catboost_predict, neuralprophet_predict
 import numpy as np
 from fastapi import FastAPI, Depends, Header
 from sqlmodel import SQLModel, Field, Session, create_engine, select
@@ -126,8 +127,8 @@ def get_forecast(
     days: int
         Number of future days to forecast.
     model: str
-        Which model to use: ``"linear"``, ``"rf"`` (Random Forest) or ``"mc"``
-        (Monte Carlo).
+        Which model to use: ``"linear"``, ``"rf"`` (Random Forest),
+        ``"mc"`` (Monte Carlo), ``"catboost"`` or ``"neuralprophet``.
     """
     with Session(engine) as s:
         txs = s.exec(select(Tx).where(Tx.user_id == user.id)).all()
@@ -152,6 +153,10 @@ def get_forecast(
             reg = RandomForestRegressor(n_estimators=200)
             reg.fit(idx, running.values)
             preds = reg.predict(future_idx)
+        elif model == "catboost":
+            preds = catboost_predict(idx, running.values, future_idx)
+        elif model == "neuralprophet":
+            preds = neuralprophet_predict(running, future_dates)
         elif model == "mc":
             daily = running.diff().fillna(running.iloc[0])
             mu = float(daily.mean())

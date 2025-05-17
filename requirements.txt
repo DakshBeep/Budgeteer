@@ -7,4 +7,6 @@ pandas
 requests
 scikit-learn
 passlib[bcrypt]
+catboost
+neuralprophet
 
