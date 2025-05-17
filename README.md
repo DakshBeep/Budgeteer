@@ -54,6 +54,13 @@ Use the Streamlit selector to choose a model. Predictions are color coded:
 
 These visual cues help interpret upcoming spending at a glance.
 
+## Recurring Transactions
+
+Transactions can be marked as recurring either via the `/tx` API or the
+Streamlit form. When `recurring` is enabled, three future monthly entries are
+created automatically. Upcoming recurring items are available from the
+`/reminders` endpoint and displayed in the UI.
+
 ## Planned Features
 
 - Record income and expenses with categories

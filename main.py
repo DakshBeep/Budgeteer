@@ -1,11 +1,11 @@
 # uvicorn main:app --reload
 
 from datetime import date, timedelta
+import pandas as pd  # for recurring date offsets
 from typing import Optional, List
 from uuid import uuid4
 
 from passlib.context import CryptContext
-import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from models.forecasting import catboost_predict, neuralprophet_predict
@@ -39,6 +39,7 @@ class TxIn(SQLModel):                 # <- used only for incoming JSON
     tx_date: date
     amount: float
     label: str
+    recurring: bool = False
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -50,6 +51,7 @@ class Tx(SQLModel, table=True):       # <- ORM table + outward schema
     tx_date: date
     amount: float
     label: str
+    recurring: bool = False
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 # ---------------------------------------------------------------------
 
@@ -91,12 +93,25 @@ def whoami(user: User = Depends(get_current_user)):
 
 @app.post("/tx", response_model=Tx)
 def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
-    tx = Tx(**tx_in.model_dump(), user_id=user.id)  # cast JSON -> ORM object
+    tx = Tx(**tx_in.model_dump(), user_id=user.id)
     with Session(engine) as s:
         s.add(tx)
+        if tx_in.recurring:
+            for i in range(1, 4):
+                future_date = (
+                    pd.Timestamp(tx_in.tx_date) + pd.DateOffset(months=i)
+                ).date()
+                future_tx = Tx(
+                    tx_date=future_date,
+                    amount=tx_in.amount,
+                    label=tx_in.label,
+                    recurring=True,
+                    user_id=user.id,
+                )
+                s.add(future_tx)
         s.commit()
         s.refresh(tx)
-        return tx                           # <-- SINGLE object
+        return tx
 
 @app.get("/tx", response_model=List[Tx])
 def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
@@ -112,6 +127,20 @@ def delete_tx(tx_id: int, user: User = Depends(get_current_user)) -> None:
             raise HTTPException(status_code=404, detail="Not found")
         s.delete(tx)
         s.commit()
+
+
+@app.get("/reminders", response_model=List[Tx])
+def get_reminders(days: int = 30, user: User = Depends(get_current_user)) -> List[Tx]:
+    """Return upcoming recurring transactions within ``days`` days."""
+    cutoff = date.today() + timedelta(days=days)
+    with Session(engine) as s:
+        stmt = select(Tx).where(
+            Tx.user_id == user.id,
+            Tx.recurring == True,
+            Tx.tx_date > date.today(),
+            Tx.tx_date <= cutoff,
+        )
+        return s.exec(stmt).all()
 
 
 @app.get("/forecast")

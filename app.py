@@ -10,6 +10,7 @@ FORECAST_API = "http://127.0.0.1:8000/forecast"
 API = "http://127.0.0.1:8000/tx"   # FastAPI base URL
 LOGIN = "http://127.0.0.1:8000/login"
 REGISTER = "http://127.0.0.1:8000/register"
+REMINDERS = "http://127.0.0.1:8000/reminders"
 
 st.title("Budgeteer – quick demo")
 
@@ -49,6 +50,7 @@ with col2:
     amount = st.number_input("Amount", value=0.0, step=0.01, format="%.2f")
 with col3:
     label = st.selectbox("Category", options=categories, index=4)  # default “Food”
+recurring = st.checkbox("Recurring monthly", value=False)
 
 headers = {"Authorization": f"Bearer {st.session_state['token']}"}
 
@@ -59,7 +61,8 @@ if st.button("Save"):
         requests.post(API, json={
             "tx_date": str(tx_date),
             "amount": amount,
-            "label": label
+            "label": label,
+            "recurring": recurring
         }, headers=headers)
         st.success("Saved!")
         st.rerun()        # refresh the page
@@ -68,6 +71,13 @@ if st.button("Save"):
 data = requests.get(API, headers=headers).json()
 df = pd.DataFrame(data)
 st.dataframe(df)
+
+# show upcoming recurring transactions
+reminders = requests.get(REMINDERS, headers=headers).json()
+reminder_df = pd.DataFrame(reminders)
+if not reminder_df.empty:
+    st.subheader("Upcoming recurring transactions")
+    st.dataframe(reminder_df)
 
 # ── running-balance chart ───────────────────────────────────
 if not df.empty:
