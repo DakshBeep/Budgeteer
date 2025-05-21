@@ -10,6 +10,5 @@ passlib[bcrypt]
 catboost
 neuralprophet
 PyJWT
-httpx
+httpx==0.25
 pytest
-
