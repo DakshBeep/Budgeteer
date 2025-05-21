@@ -10,5 +10,5 @@ passlib[bcrypt]
 catboost
 neuralprophet
 PyJWT
-httpx
+httpx<0.26
 
