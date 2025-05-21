@@ -9,7 +9,7 @@ class TxIn(BaseModel):
     notes: Optional[str] = None
     recurring: bool = False
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def check_values(cls, values):
         if values.get("amount") == 0:
             raise ValueError("amount must not be zero")
