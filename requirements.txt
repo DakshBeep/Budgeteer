@@ -14,3 +14,4 @@ httpx<0.25
 python-dotenv
 psycopg2-binary
 
+pytest>=7.0
