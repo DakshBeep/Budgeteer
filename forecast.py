@@ -25,7 +25,9 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
         running = df.cumsum()
 
         base = running.index.min()
-        idx = (running.index - base).days.values.reshape(-1, 1)
+        idx = (pd.to_datetime(running.index) - pd.Timestamp(base)).days.values.reshape(
+            -1, 1
+        )
 
         last_idx = int(idx[-1][0])
         last_date = running.index.max()
@@ -100,7 +102,11 @@ def get_goal(user=Depends(get_current_user)):
         ).all()
         total_spent = sum(abs(t.amount) for t in spent)
         if goal:
-            return {"month": month_start.isoformat(), "amount": goal.amount, "spent": total_spent}
+            return {
+                "month": month_start.isoformat(),
+                "amount": goal.amount,
+                "spent": total_spent,
+            }
         return {"month": month_start.isoformat(), "amount": 0.0, "spent": total_spent}
 
 
