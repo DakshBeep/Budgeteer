@@ -14,6 +14,17 @@ LOGIN = f"{API_BASE}/login"
 REGISTER = f"{API_BASE}/register"
 REMINDERS = f"{API_BASE}/reminders"
 GOAL = f"{API_BASE}/goal"
+CHANGE_PW = f"{API_BASE}/change_password"
+
+
+def handle_response(resp):
+    """Handle 401 errors by prompting re-login."""
+    if resp.status_code == 401:
+        st.error("Your session has expired. Please log in again.")
+        if "token" in st.session_state:
+            del st.session_state["token"]
+        st.experimental_rerun()
+    return resp
 
 st.title("Budgeteer – quick demo")
 
@@ -47,6 +58,25 @@ if st.sidebar.button("Logout"):
     del st.session_state["token"]
     st.experimental_rerun()
 
+with st.sidebar.expander("Change password"):
+    curr = st.text_input("Current password", type="password", key="curr_pw")
+    new1 = st.text_input("New password", type="password", key="new_pw")
+    new2 = st.text_input("Confirm new password", type="password", key="new_pw2")
+    if st.button("Update password"):
+        if new1 != new2:
+            st.error("New passwords do not match")
+        else:
+            resp = requests.post(
+                CHANGE_PW,
+                json={"current_password": curr, "new_password": new1},
+                headers=auth_headers,
+            )
+            handle_response(resp)
+            if resp.status_code == 200:
+                st.success("Password updated")
+            else:
+                st.error(resp.json().get("detail", "Failed"))
+
 # first time help
 if not st.session_state.get("seen_help"):
     st.info("Use the form below to add income or expenses. Switch the type to 'Expense' for money you spend.")
@@ -77,6 +107,7 @@ auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}  # JWT
 @st.cache_data
 def fetch_goal(headers):
     r = requests.get(GOAL, headers=headers)
+    handle_response(r)
     if r.status_code == 200:
         return r.json()
     return {"amount": 0.0, "spent": 0.0}
@@ -89,6 +120,7 @@ if goal_info.get("amount", 0.0) > 0:
     st.sidebar.progress(min(progress/goal_info["amount"], 1.0))
 if st.sidebar.button("Set budget"):
     r = requests.post(GOAL, params={"amount": new_budget}, headers=auth_headers)
+    handle_response(r)
     if r.status_code == 200:
         fetch_goal.clear()
         st.sidebar.success("Budget saved")
@@ -110,6 +142,7 @@ if st.button("Save"):
             },
             headers=auth_headers,
         )
+        handle_response(r)
         if r.status_code == 200:
             st.success("Saved!")
             get_txs.clear()
@@ -121,6 +154,7 @@ if st.button("Save"):
 @st.cache_data
 def fetch_txs(headers):
     r = requests.get(API, headers=headers)
+    handle_response(r)
     if r.status_code == 200:
         return r.json()
     st.error(r.json().get("detail", "Failed to fetch transactions"))
@@ -162,6 +196,7 @@ if not df.empty:
                         params={"propagate": prop},
                         headers=auth_headers,
                     )
+                    handle_response(resp)
                     if resp.status_code == 200:
                         st.success("Updated")
                         fetch_txs.clear()
@@ -172,6 +207,7 @@ if not df.empty:
             with st.modal("Confirm delete"):
                 if st.button("Confirm", key=f"conf{row['id']}"):
                     resp = requests.delete(f"{API}/{row['id']}", headers=auth_headers)
+                    handle_response(resp)
                     if resp.status_code == 204:
                         st.success("Deleted")
                         fetch_txs.clear()
@@ -182,7 +218,9 @@ else:
     st.info("No transactions yet")
 
 # show upcoming recurring transactions
-reminders = requests.get(REMINDERS, headers=auth_headers).json()
+reminders_resp = requests.get(REMINDERS, headers=auth_headers)
+handle_response(reminders_resp)
+reminders = reminders_resp.json() if reminders_resp.status_code == 200 else []
 reminder_df = pd.DataFrame(reminders)
 if not reminder_df.empty:
     st.subheader("Upcoming recurring transactions")
@@ -256,6 +294,7 @@ if not df.empty:
     @st.cache_data
     def fetch_forecast(parms, headers):
         r = requests.get(FORECAST_API, params=parms, headers=headers)
+        handle_response(r)
         if r.status_code == 200:
             return r.json()
         st.error(r.json().get("detail", "Forecast failed"))
