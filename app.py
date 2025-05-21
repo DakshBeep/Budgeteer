@@ -94,13 +94,23 @@ categories = [
 ]
 
 with col1:
-    tx_date = st.date_input("Date")
+    tx_date = st.date_input("Date", value=st.session_state.get("last_date", pd.Timestamp.today()).date())
 with col2:
-    amount = st.number_input("Amount", value=0.0, step=0.01, format="%.2f")
+    amount = st.number_input(
+        "Amount",
+        value=0.0,
+        step=0.01,
+        format="%.2f",
+        min_value=0.0,
+        help="No need to enter a minus sign – choose 'Expense' for money spent.",
+    )
     tx_type = st.radio("Type", ["Income", "Expense"], horizontal=True)
 with col3:
-    label = st.selectbox("Category", options=categories, index=4)  # default “Food”
-recurring = st.checkbox("Recurring monthly", value=False)
+    default_idx = categories.index(st.session_state.get("last_cat", "Food")) if st.session_state.get("last_cat") in categories else 4
+    label = st.selectbox("Category", options=categories, index=default_idx)
+    recurring = st.checkbox("Recurring monthly", value=False)
+
+notes = st.text_input("Notes", value="")
 
 auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}  # JWT
 
@@ -138,6 +148,7 @@ if st.button("Save"):
                 "tx_date": str(tx_date),
                 "amount": final_amount,
                 "label": label,
+                "notes": notes or None,
                 "recurring": recurring,
             },
             headers=auth_headers,
@@ -145,6 +156,8 @@ if st.button("Save"):
         handle_response(r)
         if r.status_code == 200:
             st.success("Saved!")
+            st.session_state["last_date"] = tx_date
+            st.session_state["last_cat"] = label
             get_txs.clear()
             st.rerun()        # refresh the page
         else:
@@ -168,19 +181,33 @@ if not df.empty:
     ledger_df = ledger_df.sort_values("tx_date", ascending=False)
     st.subheader("Transactions")
     search = st.text_input("Search", "")
+    colf1, colf2 = st.columns(2)
+    start_filter = colf1.date_input("Start", value=ledger_df["tx_date"].min())
+    end_filter = colf2.date_input("End", value=ledger_df["tx_date"].max())
     if search:
         ledger_df = ledger_df[ledger_df["label"].str.contains(search, case=False)]
+    ledger_df = ledger_df[(ledger_df["tx_date"] >= pd.Timestamp(start_filter)) & (ledger_df["tx_date"] <= pd.Timestamp(end_filter))]
     for _, row in ledger_df.iterrows():
         cols = st.columns([3,2,2,1,1])
         cols[0].write(row["tx_date"].strftime("%Y-%m-%d"))
         cols[1].write(row["label"])
-        cols[2].write(f"{row['amount']:.2f}")
+        if row.get("notes"):
+            cols[1].caption(row["notes"])
+        cols[2].write(f"${row['amount']:,.2f}")
         if cols[3].button("Edit", key=f"e{row['id']}"):
             with st.modal("Edit transaction"):
                 etx_date = st.date_input("Date", value=row["tx_date"])
-                eamount = st.number_input("Amount", value=float(abs(row['amount'])), step=0.01, format="%.2f")
+                eamount = st.number_input(
+                    "Amount",
+                    value=float(abs(row['amount'])),
+                    step=0.01,
+                    format="%.2f",
+                    min_value=0.0,
+                    help="No need to enter a minus sign – choose 'Expense' for money spent.",
+                )
                 etype = st.radio("Type", ["Income", "Expense"], index=0 if row['amount']>0 else 1)
                 elabel = st.selectbox("Category", categories, index=categories.index(row['label']))
+                enotes = st.text_input("Notes", value=row.get("notes", ""))
                 erec = st.checkbox("Recurring monthly", value=row['recurring'])
                 prop = st.checkbox("Apply to future entries", value=False)
                 if st.button("Save", key=f"save{row['id']}"):
@@ -191,6 +218,7 @@ if not df.empty:
                             "tx_date": str(etx_date),
                             "amount": final_amt,
                             "label": elabel,
+                            "notes": enotes or None,
                             "recurring": erec,
                         },
                         params={"propagate": prop},
@@ -199,6 +227,8 @@ if not df.empty:
                     handle_response(resp)
                     if resp.status_code == 200:
                         st.success("Updated")
+                        st.session_state["last_date"] = etx_date
+                        st.session_state["last_cat"] = elabel
                         fetch_txs.clear()
                         st.experimental_rerun()
                     else:
@@ -246,6 +276,7 @@ if not df.empty:
         markers=True,
     )
     fig.update_xaxes(dtick="D", tickformat="%b %d")   # prettier x-axis
+    fig.update_yaxes(tickprefix="$")
     st.plotly_chart(fig, use_container_width=True)
 
     summary = (
@@ -267,6 +298,7 @@ if not df.empty:
             values="amount",
             hole=0.4,
         )
+        fig_inc.update_traces(texttemplate="$%{value:,.2f}")
         colA.plotly_chart(fig_inc, use_container_width=True)
     if not expense_df.empty:
         colB.subheader("Expenses")
@@ -276,11 +308,13 @@ if not df.empty:
             values="amount",
             hole=0.4,
         )
+        fig_exp.update_traces(texttemplate="$%{value:,.2f}")
         colB.plotly_chart(fig_exp, use_container_width=True)
 
     # ---- forecast chart -------------------------------------------
     st.subheader("Forecast")
     forecast_days = st.slider("Days to forecast", min_value=1, max_value=30, value=7)
+    advanced = st.checkbox("Show advanced options", value=False)
     model_map = {
         "Linear Regression": "linear",
         "Random Forest": "rf",
@@ -288,8 +322,12 @@ if not df.empty:
         "CatBoost": "catboost",
         "NeuralProphet": "neuralprophet",
     }
-    model_label = st.selectbox("Model (advanced)", list(model_map.keys()))
-    params = {"days": forecast_days, "model": model_map[model_label]}
+    if advanced:
+        model_label = st.selectbox("Model", list(model_map.keys()))
+        model_choice = model_map[model_label]
+    else:
+        model_choice = "linear"
+    params = {"days": forecast_days, "model": model_choice}
 
     @st.cache_data
     def fetch_forecast(parms, headers):
@@ -312,6 +350,7 @@ if not df.empty:
             markers=True,
         )
         fig3.update_xaxes(dtick="D", tickformat="%b %d")
+        fig3.update_yaxes(tickprefix="$")
         st.plotly_chart(fig3, use_container_width=True)
         final_balance = forecast_df["predicted_balance"].iloc[-1]
         current_balance = (
