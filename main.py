@@ -157,7 +157,12 @@ def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
 
 
 @app.put("/tx/{tx_id}", response_model=Tx)
-def update_tx(tx_id: int, tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
+def update_tx(
+    tx_id: int,
+    tx_in: TxIn,
+    propagate: bool = False,
+    user: User = Depends(get_current_user),
+) -> Tx:
     with Session(engine) as s:
         logger.info("update_tx user=%s id=%s", user.username, tx_id)
         tx = s.get(Tx, tx_id)
@@ -189,10 +194,23 @@ def update_tx(tx_id: int, tx_in: TxIn, user: User = Depends(get_current_user)) -
                     series_id=new_series,
                 )
                 s.add(future_tx)
+        old_date = tx.tx_date
+        delta = tx_in.tx_date - old_date
         tx.tx_date = tx_in.tx_date
         tx.amount = tx_in.amount
         tx.label = tx_in.label
         tx.recurring = tx_in.recurring
+        if propagate and tx.series_id and tx.recurring:
+            stmt = select(Tx).where(
+                Tx.series_id == tx.series_id,
+                Tx.user_id == user.id,
+                Tx.tx_date > old_date,
+            )
+            for f in s.exec(stmt).all():
+                f.amount = tx_in.amount
+                f.label = tx_in.label
+                f.tx_date = f.tx_date + delta
+                s.add(f)
         s.add(tx)
         s.commit()
         s.refresh(tx)

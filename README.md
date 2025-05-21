@@ -74,6 +74,8 @@ Transactions can be marked as recurring either via the `/tx` API or the
 Streamlit form. When `recurring` is enabled, three future monthly entries are
 created automatically. Upcoming recurring items are available from the
 `/reminders` endpoint and displayed in the UI.
+Editing a recurring transaction now offers an option to update all future
+instances in that series so your recurring amounts stay consistent.
 
 ## Planned Features
 

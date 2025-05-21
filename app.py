@@ -148,6 +148,7 @@ if not df.empty:
                 etype = st.radio("Type", ["Income", "Expense"], index=0 if row['amount']>0 else 1)
                 elabel = st.selectbox("Category", categories, index=categories.index(row['label']))
                 erec = st.checkbox("Recurring monthly", value=row['recurring'])
+                prop = st.checkbox("Apply to future entries", value=False)
                 if st.button("Save", key=f"save{row['id']}"):
                     final_amt = eamount if etype == "Income" else -abs(eamount)
                     resp = requests.put(
@@ -158,6 +159,7 @@ if not df.empty:
                             "label": elabel,
                             "recurring": erec,
                         },
+                        params={"propagate": prop},
                         headers=auth_headers,
                     )
                     if resp.status_code == 200:
