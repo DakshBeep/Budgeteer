@@ -4,7 +4,9 @@ Budgeteer is a demo budget tracking application combining a FastAPI backend with
 
 ## Project Structure
 
-- `main.py` – FastAPI application with database models and endpoints.
+- `main.py` – FastAPI application including routers.
+- `auth.py`, `transactions.py`, `forecast.py` – API route modules.
+- `dbmodels.py` – SQLModel ORM classes.
 - `app.py` – Streamlit front end for entering and viewing transactions.
 - `requirements.txt` – Python dependencies.
 - `docs/PLANNING.md` – development workflow, roles and milestones.
@@ -24,6 +26,18 @@ Budgeteer is a demo budget tracking application combining a FastAPI backend with
    ```bash
    streamlit run app.py
    ```
+
+Environment variables such as `DATABASE_URL` and `JWT_SECRET` can be placed in a
+`.env` file for development. The server will load these at startup.
+
+## Deployment
+
+The included `docker-compose.yml` starts both the FastAPI backend and the Streamlit
+frontend. Set `JWT_SECRET` and `DATABASE_URL` in an `.env` file before running:
+
+```bash
+docker compose up --build
+```
 
 ## Authentication
 

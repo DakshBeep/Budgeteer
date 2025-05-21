@@ -5,9 +5,8 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     volumes:
       - db-data:/app
-    environment:
-      - DATABASE_URL=sqlite:///budgeteer.db
-      - JWT_SECRET=supersecret
+    env_file:
+      - .env
     ports:
       - "8000:8000"
   frontend:
