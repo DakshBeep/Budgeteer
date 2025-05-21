@@ -192,11 +192,14 @@ if not df.empty:
     df["tx_date"] = pd.to_datetime(df["tx_date"])
     df = df.sort_values("tx_date")
 
-    # running balance
-    df["running_balance"] = df["amount"].cumsum()
+    # exclude future-dated entries from calculations
+    chart_df = df[df["tx_date"] <= pd.Timestamp.today()].copy()
+
+    # running balance on historical data only
+    chart_df["running_balance"] = chart_df["amount"].cumsum()
 
     fig = px.line(
-        df,
+        chart_df,
         x="tx_date",
         y="running_balance",
         title="Running balance over time",
@@ -206,7 +209,7 @@ if not df.empty:
     st.plotly_chart(fig, use_container_width=True)
 
     summary = (
-        df.groupby("label", as_index=False)["amount"]
+        chart_df.groupby("label", as_index=False)["amount"]
         .sum()
         .sort_values("amount", ascending=False)
     )
@@ -270,7 +273,9 @@ if not df.empty:
         fig3.update_xaxes(dtick="D", tickformat="%b %d")
         st.plotly_chart(fig3, use_container_width=True)
         final_balance = forecast_df["predicted_balance"].iloc[-1]
-        current_balance = df["running_balance"].iloc[-1]
+        current_balance = (
+            chart_df["running_balance"].iloc[-1] if not chart_df.empty else 0
+        )
         if final_balance < 0:
             st.error("Forecast shows negative balance!")
         elif final_balance < current_balance:
