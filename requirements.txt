@@ -10,4 +10,6 @@ passlib[bcrypt]
 catboost
 neuralprophet
 PyJWT
+httpx
+pytest
 
