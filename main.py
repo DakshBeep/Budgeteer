@@ -314,7 +314,10 @@ def get_goal(user: User = Depends(get_current_user)):
     month_start = date.today().replace(day=1)
     with Session(engine) as s:
         goal = s.exec(
-            select(BudgetGoal).where(BudgetGoal.user_id == user.id)
+            select(BudgetGoal).where(
+                BudgetGoal.user_id == user.id,
+                BudgetGoal.month == month_start,
+            )
         ).first()
         spent = s.exec(
             select(Tx).where(
@@ -343,7 +346,10 @@ def set_goal(amount: float, user: User = Depends(get_current_user)):
     with Session(engine) as s:
         logger.info("set_goal user=%s", user.username)
         goal = s.exec(
-            select(BudgetGoal).where(BudgetGoal.user_id == user.id)
+            select(BudgetGoal).where(
+                BudgetGoal.user_id == user.id,
+                BudgetGoal.month == month_start,
+            )
         ).first()
         if goal:
             goal.amount = amount

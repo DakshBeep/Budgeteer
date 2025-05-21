@@ -1,9 +1,11 @@
 import os
+import sys
 import tempfile
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, Session, select
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import main
 
 @pytest.fixture(autouse=True)
@@ -62,3 +64,33 @@ def test_budget_goal():
     r = client.get("/goal", headers=headers)
     assert r.status_code == 200
     assert r.json()["amount"] == 100
+
+
+def test_budget_goal_new_month(monkeypatch):
+    headers = register_and_login("i", "j")
+    # set goal for current month
+    r = client.post("/goal", params={"amount": 100}, headers=headers)
+    assert r.status_code == 200
+
+    current_month = main.date.today().replace(day=1)
+    next_month = (current_month + main.timedelta(days=32)).replace(day=1)
+
+    class FixedDate(main.date.__class__):
+        @classmethod
+        def today(cls):
+            return next_month
+
+    monkeypatch.setattr(main, "date", FixedDate)
+
+    r = client.get("/goal", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["amount"] == 0.0
+
+    r = client.post("/goal", params={"amount": 200}, headers=headers)
+    assert r.status_code == 200
+    assert r.json()["amount"] == 200
+
+    with Session(main.engine) as s:
+        user = s.exec(select(main.User).where(main.User.username == "i")).first()
+        goals = s.exec(select(main.BudgetGoal).where(main.BudgetGoal.user_id == user.id)).all()
+        assert len(goals) == 2
