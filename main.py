@@ -1,6 +1,7 @@
 # uvicorn main:app --reload
 
 from datetime import date, timedelta, datetime
+import os
 import pandas as pd  # for recurring date offsets
 from typing import Optional, List
 import jwt
@@ -12,14 +13,16 @@ from models.forecasting import catboost_predict, neuralprophet_predict
 import numpy as np
 from fastapi import FastAPI, Depends, Header
 from sqlmodel import SQLModel, Field, Session, create_engine, select
+from pydantic import root_validator
 from fastapi import HTTPException
 
 app = FastAPI()
-engine = create_engine("sqlite:///budgeteer.db", echo=False)
+db_url = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
+engine = create_engine(db_url, echo=False)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-JWT_SECRET = "budgeteer-secret"
+JWT_SECRET = os.getenv("JWT_SECRET", "budgeteer-secret")
 JWT_ALGORITHM = "HS256"
 
 
@@ -44,6 +47,17 @@ class TxIn(SQLModel):                 # <- used only for incoming JSON
     amount: float
     label: str
     recurring: bool = False
+
+    @root_validator
+    def check_values(cls, values):
+        if values.get("amount") == 0:
+            raise ValueError("amount must not be zero")
+        if (
+            not values.get("recurring")
+            and values.get("tx_date") > date.today()
+        ):
+            raise ValueError("tx_date cannot be in the future for non-recurring entries")
+        return values
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -125,6 +139,22 @@ def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
     with Session(engine) as s:
         stmt = select(Tx).where(Tx.user_id == user.id)
         return s.exec(stmt).all()     # <-- LIST of objects
+
+
+@app.put("/tx/{tx_id}", response_model=Tx)
+def update_tx(tx_id: int, tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
+    with Session(engine) as s:
+        tx = s.get(Tx, tx_id)
+        if not tx or tx.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Not found")
+        tx.tx_date = tx_in.tx_date
+        tx.amount = tx_in.amount
+        tx.label = tx_in.label
+        tx.recurring = tx_in.recurring
+        s.add(tx)
+        s.commit()
+        s.refresh(tx)
+        return tx
 # ---------------------------------------------------------------------
 @app.delete("/tx/{tx_id}", status_code=204)
 def delete_tx(tx_id: int, user: User = Depends(get_current_user)) -> None:
