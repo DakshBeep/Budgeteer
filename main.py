@@ -5,6 +5,8 @@ import os
 import pandas as pd  # for recurring date offsets
 from typing import Optional, List
 import jwt
+import logging
+from functools import lru_cache
 
 from passlib.context import CryptContext
 from sklearn.linear_model import LinearRegression
@@ -19,6 +21,9 @@ from fastapi import HTTPException
 app = FastAPI()
 db_url = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
 engine = create_engine(db_url, echo=False)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -70,6 +75,13 @@ class Tx(SQLModel, table=True):       # <- ORM table + outward schema
     amount: float
     label: str
     recurring: bool = False
+    series_id: Optional[int] = Field(default=None, index=True)
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+
+class BudgetGoal(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    month: date
+    amount: float
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 # ---------------------------------------------------------------------
 
@@ -114,7 +126,9 @@ def whoami(user: User = Depends(get_current_user)):
 
 @app.post("/tx", response_model=Tx)
 def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
-    tx = Tx(**tx_in.model_dump(), user_id=user.id)
+    logger.info("add_tx user=%s", user.username)
+    series_id = int(datetime.utcnow().timestamp()) if tx_in.recurring else None
+    tx = Tx(**tx_in.model_dump(), user_id=user.id, series_id=series_id)
     with Session(engine) as s:
         s.add(tx)
         if tx_in.recurring:
@@ -128,6 +142,7 @@ def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
                     label=tx_in.label,
                     recurring=True,
                     user_id=user.id,
+                    series_id=series_id,
                 )
                 s.add(future_tx)
         s.commit()
@@ -137,16 +152,43 @@ def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
 @app.get("/tx", response_model=List[Tx])
 def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
     with Session(engine) as s:
-        stmt = select(Tx).where(Tx.user_id == user.id)
-        return s.exec(stmt).all()     # <-- LIST of objects
+        stmt = select(Tx).where(Tx.user_id == user.id).order_by(Tx.tx_date.desc())
+        return s.exec(stmt).all()
 
 
 @app.put("/tx/{tx_id}", response_model=Tx)
 def update_tx(tx_id: int, tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
     with Session(engine) as s:
+        logger.info("update_tx user=%s id=%s", user.username, tx_id)
         tx = s.get(Tx, tx_id)
         if not tx or tx.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
+        # handle change in recurring flag
+        if tx.recurring and not tx_in.recurring:
+            stmt = select(Tx).where(
+                Tx.series_id == tx.series_id,
+                Tx.user_id == user.id,
+                Tx.tx_date > tx.tx_date,
+            )
+            for f in s.exec(stmt).all():
+                s.delete(f)
+            tx.series_id = None
+        elif tx_in.recurring and not tx.recurring:
+            new_series = int(datetime.utcnow().timestamp())
+            tx.series_id = new_series
+            for i in range(1, 4):
+                future_date = (
+                    pd.Timestamp(tx_in.tx_date) + pd.DateOffset(months=i)
+                ).date()
+                future_tx = Tx(
+                    tx_date=future_date,
+                    amount=tx_in.amount,
+                    label=tx_in.label,
+                    recurring=True,
+                    user_id=user.id,
+                    series_id=new_series,
+                )
+                s.add(future_tx)
         tx.tx_date = tx_in.tx_date
         tx.amount = tx_in.amount
         tx.label = tx_in.label
@@ -159,10 +201,20 @@ def update_tx(tx_id: int, tx_in: TxIn, user: User = Depends(get_current_user)) -
 @app.delete("/tx/{tx_id}", status_code=204)
 def delete_tx(tx_id: int, user: User = Depends(get_current_user)) -> None:
     with Session(engine) as s:
+        logger.info("delete_tx user=%s id=%s", user.username, tx_id)
         tx = s.get(Tx, tx_id)
         if not tx or tx.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
-        s.delete(tx)
+        if tx.series_id:
+            stmt = select(Tx).where(
+                Tx.series_id == tx.series_id,
+                Tx.user_id == user.id,
+                Tx.tx_date >= tx.tx_date,
+            )
+            for f in s.exec(stmt).all():
+                s.delete(f)
+        else:
+            s.delete(tx)
         s.commit()
 
 
@@ -180,27 +232,9 @@ def get_reminders(days: int = 30, user: User = Depends(get_current_user)) -> Lis
         return s.exec(stmt).all()
 
 
-@app.get("/forecast")
-def get_forecast(
-    days: int = 7,
-    model: str = "linear",
-    user: User = Depends(get_current_user),
-):
-    """Return predicted running balance for the next ``days`` days.
-
-    Parameters
-    ----------
-    days: int
-        Number of future days to forecast.
-    model: str
-        Which model to use: ``"linear"``, ``"rf"`` (Random Forest),
-        ``"mc"`` (Monte Carlo), ``"catboost"`` or ``"neuralprophet``.
-    """
+def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
     with Session(engine) as s:
-        txs = s.exec(select(Tx).where(Tx.user_id == user.id)).all()
-        if not txs:
-            raise HTTPException(status_code=404, detail="No transactions")
-
+        txs = s.exec(select(Tx).where(Tx.user_id == user_id)).all()
         df = pd.DataFrame(
             [{"tx_date": t.tx_date, "amount": t.amount} for t in txs]
         )
@@ -242,3 +276,78 @@ def get_forecast(
             {"tx_date": d.isoformat(), "predicted_balance": float(p)}
             for d, p in zip(future_dates, preds)
         ]
+
+
+@lru_cache(maxsize=32)
+def cached_forecast(user_id: int, days: int, model: str, last_ts: float):
+    return tuple(_forecast_cached(user_id, days, model, last_ts))
+
+
+@app.get("/forecast")
+def get_forecast(
+    days: int = 7,
+    model: str = "linear",
+    user: User = Depends(get_current_user),
+):
+    """Return predicted running balance for the next ``days`` days.
+
+    Parameters
+    ----------
+    days: int
+        Number of future days to forecast.
+    model: str
+        Which model to use: ``"linear"``, ``"rf"`` (Random Forest),
+        ``"mc"`` (Monte Carlo), ``"catboost"`` or ``"neuralprophet``.
+    """
+    with Session(engine) as s:
+        txs = s.exec(select(Tx).where(Tx.user_id == user.id)).all()
+        if not txs:
+            raise HTTPException(status_code=404, detail="No transactions")
+        last_ts = max(t.tx_date for t in txs).toordinal()
+    result = cached_forecast(user.id, days, model, last_ts)
+    return list(result)
+
+
+@app.get("/goal")
+def get_goal(user: User = Depends(get_current_user)):
+    month_start = date.today().replace(day=1)
+    with Session(engine) as s:
+        goal = s.exec(
+            select(BudgetGoal).where(BudgetGoal.user_id == user.id)
+        ).first()
+        spent = s.exec(
+            select(Tx).where(
+                Tx.user_id == user.id,
+                Tx.tx_date >= month_start,
+                Tx.amount < 0,
+            )
+        ).all()
+        total_spent = sum(abs(t.amount) for t in spent)
+        if goal:
+            return {
+                "month": month_start.isoformat(),
+                "amount": goal.amount,
+                "spent": total_spent,
+            }
+        return {
+            "month": month_start.isoformat(),
+            "amount": 0.0,
+            "spent": total_spent,
+        }
+
+
+@app.post("/goal")
+def set_goal(amount: float, user: User = Depends(get_current_user)):
+    month_start = date.today().replace(day=1)
+    with Session(engine) as s:
+        logger.info("set_goal user=%s", user.username)
+        goal = s.exec(
+            select(BudgetGoal).where(BudgetGoal.user_id == user.id)
+        ).first()
+        if goal:
+            goal.amount = amount
+        else:
+            goal = BudgetGoal(month=month_start, amount=amount, user_id=user.id)
+            s.add(goal)
+        s.commit()
+        return {"month": month_start.isoformat(), "amount": amount}

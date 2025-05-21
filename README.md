@@ -57,6 +57,16 @@ Use the Streamlit selector to choose a model. Predictions are color coded:
 
 These visual cues help interpret upcoming spending at a glance.
 
+## Budget Goals
+
+Each user can now set a monthly budget limit using the sidebar. A progress bar
+shows how much of the budget has been spent so far for the current month.
+
+## Transaction Search
+
+Transactions are sorted newest first and a search box lets you filter by label,
+making it easier to find past entries.
+
 ## Recurring Transactions
 
 Transactions can be marked as recurring either via the `/tx` API or the
