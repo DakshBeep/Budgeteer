@@ -19,9 +19,9 @@ def temp_db(monkeypatch):
 client = TestClient(main.app)
 
 def register_and_login(username="user", password="pass"):
-    r = client.post("/register", data={"username": username, "password": password})
+    r = client.post("/register", params={"username": username, "password": password})
     assert r.status_code == 200
-    r = client.post("/login", data={"username": username, "password": password})
+    r = client.post("/login", params={"username": username, "password": password})
     assert r.status_code == 200
     token = r.json()["token"]
     return {"Authorization": f"Bearer {token}"}

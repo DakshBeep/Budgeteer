@@ -239,6 +239,7 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
             [{"tx_date": t.tx_date, "amount": t.amount} for t in txs]
         )
         df = df.groupby("tx_date")["amount"].sum().sort_index()
+        df.index = pd.to_datetime(df.index)
         running = df.cumsum()
 
         base = running.index.min()
