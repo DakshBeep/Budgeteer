@@ -42,7 +42,8 @@ curl -H "Authorization: Bearer <TOKEN>" http://127.0.0.1:8000/tx
 ```
 
 The Streamlit app automatically stores the JWT once you log in and
-includes it in subsequent requests.
+includes it in subsequent requests. Use the **Logout** button in the
+sidebar to clear the token and return to the login screen.
 
 See [docs/PLANNING.md](docs/PLANNING.md) for contributor roles, milestones and additional instructions.
 

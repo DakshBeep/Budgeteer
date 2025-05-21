@@ -42,6 +42,11 @@ if "token" not in st.session_state:
             st.sidebar.error(r.json().get("detail", "Login failed"))
     st.stop()
 
+st.sidebar.header("Account")
+if st.sidebar.button("Logout"):
+    del st.session_state["token"]
+    st.experimental_rerun()
+
 # first time help
 if not st.session_state.get("seen_help"):
     st.info("Use the form below to add income or expenses. Switch the type to 'Expense' for money you spend.")
