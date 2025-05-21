@@ -13,7 +13,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from models.forecasting import catboost_predict, neuralprophet_predict
 import numpy as np
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends, Header, Body
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from pydantic import root_validator
 from fastapi import HTTPException
@@ -149,9 +149,47 @@ def add_tx(tx_in: TxIn, user: User = Depends(get_current_user)) -> Tx:
         s.refresh(tx)
         return tx
 
+def _extend_recurring(user: User, s: Session, months: int = 3) -> None:
+    """Ensure each recurring series has ``months`` future entries."""
+    today = date.today()
+    series_ids = s.exec(
+        select(Tx.series_id)
+        .where(Tx.user_id == user.id, Tx.recurring == True, Tx.series_id != None)
+        .distinct()
+    ).all()
+    for sid in series_ids:
+        txs = (
+            s.exec(
+                select(Tx)
+                .where(Tx.series_id == sid, Tx.user_id == user.id)
+                .order_by(Tx.tx_date)
+            ).all()
+        )
+        if not txs:
+            continue
+        future_count = len([t for t in txs if t.tx_date > today])
+        last_tx = txs[-1]
+        last_date = last_tx.tx_date
+        while future_count < months:
+            last_date = (pd.Timestamp(last_date) + pd.DateOffset(months=1)).date()
+            future_tx = Tx(
+                tx_date=last_date,
+                amount=last_tx.amount,
+                label=last_tx.label,
+                recurring=True,
+                user_id=user.id,
+                series_id=sid,
+            )
+            s.add(future_tx)
+            last_tx = future_tx
+            future_count += 1
+    if series_ids:
+        s.commit()
+
 @app.get("/tx", response_model=List[Tx])
 def list_tx(user: User = Depends(get_current_user)) -> List[Tx]:
     with Session(engine) as s:
+        _extend_recurring(user, s)
         stmt = select(Tx).where(Tx.user_id == user.id).order_by(Tx.tx_date.desc())
         return s.exec(stmt).all()
 
@@ -241,6 +279,7 @@ def get_reminders(days: int = 30, user: User = Depends(get_current_user)) -> Lis
     """Return upcoming recurring transactions within ``days`` days."""
     cutoff = date.today() + timedelta(days=days)
     with Session(engine) as s:
+        _extend_recurring(user, s)
         stmt = select(Tx).where(
             Tx.user_id == user.id,
             Tx.recurring == True,
@@ -376,3 +415,20 @@ def set_goal(amount: float, user: User = Depends(get_current_user)):
             s.add(goal)
         s.commit()
         return {"month": month_start.isoformat(), "amount": amount}
+
+
+@app.post("/change_password")
+def change_password(
+    current_password: str = Body(...),
+    new_password: str = Body(...),
+    user: User = Depends(get_current_user),
+):
+    """Allow authenticated users to change their password."""
+    with Session(engine) as s:
+        db_user = s.get(User, user.id)
+        if not pwd_context.verify(current_password, db_user.password_hash):
+            raise HTTPException(status_code=400, detail="Incorrect current password")
+        db_user.password_hash = pwd_context.hash(new_password)
+        s.add(db_user)
+        s.commit()
+        return {"status": "ok"}
