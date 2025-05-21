@@ -13,6 +13,7 @@ API = f"{API_BASE}/tx"   # FastAPI base URL
 LOGIN = f"{API_BASE}/login"
 REGISTER = f"{API_BASE}/register"
 REMINDERS = f"{API_BASE}/reminders"
+GOAL = f"{API_BASE}/goal"
 
 st.title("Budgeteer – quick demo")
 
@@ -41,6 +42,11 @@ if "token" not in st.session_state:
             st.sidebar.error(r.json().get("detail", "Login failed"))
     st.stop()
 
+# first time help
+if not st.session_state.get("seen_help"):
+    st.info("Use the form below to add income or expenses. Switch the type to 'Expense' for money you spend.")
+    st.session_state["seen_help"] = True
+
 # ── input form ───────────────────────────────────────────────
 st.subheader("Add a transaction")
 
@@ -62,6 +68,27 @@ with col3:
 recurring = st.checkbox("Recurring monthly", value=False)
 
 auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}  # JWT
+
+@st.cache_data
+def fetch_goal(headers):
+    r = requests.get(GOAL, headers=headers)
+    if r.status_code == 200:
+        return r.json()
+    return {"amount": 0.0, "spent": 0.0}
+
+goal_info = fetch_goal(auth_headers)
+st.sidebar.subheader("Monthly budget")
+new_budget = st.sidebar.number_input("Budget limit", value=float(goal_info.get("amount", 0.0)), step=0.01)
+progress = goal_info.get("spent", 0.0)
+if goal_info.get("amount", 0.0) > 0:
+    st.sidebar.progress(min(progress/goal_info["amount"], 1.0))
+if st.sidebar.button("Set budget"):
+    r = requests.post(GOAL, params={"amount": new_budget}, headers=auth_headers)
+    if r.status_code == 200:
+        fetch_goal.clear()
+        st.sidebar.success("Budget saved")
+    else:
+        st.sidebar.error("Failed")
 
 if st.button("Save"):
     if amount == 0:
@@ -99,7 +126,11 @@ df = pd.DataFrame(data)
 if not df.empty:
     df["tx_date"] = pd.to_datetime(df["tx_date"])
     ledger_df = df[~((df["recurring"]) & (df["tx_date"] > pd.Timestamp.today()))]
+    ledger_df = ledger_df.sort_values("tx_date", ascending=False)
     st.subheader("Transactions")
+    search = st.text_input("Search", "")
+    if search:
+        ledger_df = ledger_df[ledger_df["label"].str.contains(search, case=False)]
     for _, row in ledger_df.iterrows():
         cols = st.columns([3,2,2,1,1])
         cols[0].write(row["tx_date"].strftime("%Y-%m-%d"))
@@ -175,17 +206,29 @@ if not df.empty:
         .sort_values("amount", ascending=False)
     )
 
-    # expenses as positive values for the pie
-    summary["abs_amount"] = summary["amount"].abs()
+    income_df = summary[summary["amount"] > 0]
+    expense_df = summary[summary["amount"] < 0].copy()
+    expense_df["amount"] = expense_df["amount"].abs()
 
-    fig2 = px.pie(
-        summary,
-        names="label",
-        values="abs_amount",
-        title="Spending / income by category",
-        hole=0.4,                     # makes it a donut
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+    colA, colB = st.columns(2)
+    if not income_df.empty:
+        colA.subheader("Income")
+        fig_inc = px.pie(
+            income_df,
+            names="label",
+            values="amount",
+            hole=0.4,
+        )
+        colA.plotly_chart(fig_inc, use_container_width=True)
+    if not expense_df.empty:
+        colB.subheader("Expenses")
+        fig_exp = px.pie(
+            expense_df,
+            names="label",
+            values="amount",
+            hole=0.4,
+        )
+        colB.plotly_chart(fig_exp, use_container_width=True)
 
     # ---- forecast chart -------------------------------------------
     st.subheader("Forecast")
@@ -197,7 +240,7 @@ if not df.empty:
         "CatBoost": "catboost",
         "NeuralProphet": "neuralprophet",
     }
-    model_label = st.selectbox("Forecast model", list(model_map.keys()))
+    model_label = st.selectbox("Model (advanced)", list(model_map.keys()))
     params = {"days": forecast_days, "model": model_map[model_label]}
 
     @st.cache_data

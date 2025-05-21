@@ -53,3 +53,12 @@ def test_forecast():
     r = client.get("/forecast", params={"days": 3}, headers=headers)
     assert r.status_code == 200
     assert len(r.json()) == 3
+
+
+def test_budget_goal():
+    headers = register_and_login("g", "h")
+    r = client.post("/goal", params={"amount": 100}, headers=headers)
+    assert r.status_code == 200
+    r = client.get("/goal", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["amount"] == 100
