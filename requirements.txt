@@ -11,4 +11,6 @@ catboost
 neuralprophet
 PyJWT
 httpx<0.25
+python-dotenv
+psycopg2-binary
 
