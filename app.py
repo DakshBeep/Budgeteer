@@ -31,11 +31,12 @@ def handle_response(resp):
 
 
 def error_detail(resp, default="Error"):
-    """Return error detail from a response, handling non-JSON bodies."""
+    """Return a human-friendly error message from any HTTP response."""
     try:
-        return resp.json().get("detail", default)
+        detail = resp.json().get("detail", "")
     except Exception:
-        return resp.text or default
+        detail = resp.text.strip()
+    return f"{default}: {detail}" if detail else default
 
 st.title("Budgeteer – quick demo")
 
@@ -62,6 +63,7 @@ if "token" not in st.session_state:
             rerun()
         else:
             st.sidebar.error(error_detail(r, "Login failed"))
+    auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}
     st.stop()
 
 st.sidebar.header("Account")
