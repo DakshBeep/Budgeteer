@@ -7,6 +7,7 @@ pandas
 requests
 scikit-learn
 passlib[bcrypt]
+python-multipart
 catboost
 neuralprophet
 PyJWT
