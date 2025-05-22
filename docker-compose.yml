@@ -18,5 +18,14 @@ services:
       - backend
     ports:
       - "8501:8501"
+  web:
+    build:
+      context: ./frontend
+    environment:
+      - REACT_APP_API_BASE=http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
 volumes:
   db-data:
