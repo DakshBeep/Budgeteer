@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Body
+from fastapi import APIRouter, Depends, HTTPException, Header, Body, Form
 from sqlmodel import Session, select
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -39,7 +39,7 @@ def get_current_user(authorization: str = Header(None)) -> User:
 
 
 @router.post("/register")
-def register(username: str, password: str):
+def register(username: str = Form(...), password: str = Form(...)):
     with Session(main.engine) as s:
         existing = s.exec(select(User).where(User.username == username)).first()
         if existing:
@@ -52,7 +52,7 @@ def register(username: str, password: str):
 
 
 @router.post("/login")
-def login(username: str, password: str):
+def login(username: str = Form(...), password: str = Form(...)):
     with Session(main.engine) as s:
         user = s.exec(select(User).where(User.username == username)).first()
         if not user or not pwd_context.verify(password, user.password_hash):

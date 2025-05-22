@@ -2,10 +2,15 @@ import os
 import sys
 import tempfile
 import pytest
+
+# Ensure local packages (including a lightweight 'multipart' stub) are on the path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import multipart  # load lightweight stub before FastAPI imports Starlette
+import starlette.formparsers as fp
+fp.multipart = multipart  # make FastAPI think python-multipart is installed
+
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, select
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import main
 
 @pytest.fixture(autouse=True)
@@ -21,9 +26,9 @@ def temp_db(monkeypatch):
 client = TestClient(main.app)
 
 def register_and_login(username="user", password="pass"):
-    r = client.post("/register", params={"username": username, "password": password})
+    r = client.post("/register", data={"username": username, "password": password})
     assert r.status_code == 200
-    r = client.post("/login", params={"username": username, "password": password})
+    r = client.post("/login", data={"username": username, "password": password})
     assert r.status_code == 200
     token = r.json()["token"]
     return {"Authorization": f"Bearer {token}"}
@@ -145,7 +150,7 @@ def test_change_password():
         headers=headers,
     )
     assert r.status_code == 200
-    r = client.post("/login", params={"username": "chuser", "password": "newpw"})
+    r = client.post("/login", data={"username": "chuser", "password": "newpw"})
     assert r.status_code == 200
 
 
