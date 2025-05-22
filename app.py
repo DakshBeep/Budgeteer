@@ -1,6 +1,9 @@
 # streamlit run app.py
 
 import streamlit as st
+
+# compatibility: Streamlit >=1.25 renamed `experimental_rerun` to `rerun`
+rerun = getattr(st, "experimental_rerun", st.rerun)
 import os
 import requests
 import pandas as pd
@@ -23,7 +26,7 @@ def handle_response(resp):
         st.error("Your session has expired. Please log in again.")
         if "token" in st.session_state:
             del st.session_state["token"]
-        st.experimental_rerun()
+        rerun()
     return resp
 
 st.title("Budgeteer – quick demo")
@@ -39,7 +42,7 @@ if "token" not in st.session_state:
             r2 = requests.post(LOGIN, data={"username": username, "password": password})
             if r2.status_code == 200:
                 st.session_state["token"] = r2.json()["token"]
-                st.experimental_rerun()
+                rerun()
             else:
                 st.sidebar.error(r2.json().get("detail", "Auto-login failed"))
         else:
@@ -48,7 +51,7 @@ if "token" not in st.session_state:
         r = requests.post(LOGIN, data={"username": username, "password": password})
         if r.status_code == 200:
             st.session_state["token"] = r.json()["token"]
-            st.experimental_rerun()
+            rerun()
         else:
             st.sidebar.error(r.json().get("detail", "Login failed"))
     st.stop()
@@ -56,7 +59,7 @@ if "token" not in st.session_state:
 st.sidebar.header("Account")
 if st.sidebar.button("Logout"):
     del st.session_state["token"]
-    st.experimental_rerun()
+    rerun()
 
 with st.sidebar.expander("Change password"):
     curr = st.text_input("Current password", type="password", key="curr_pw")
@@ -230,7 +233,7 @@ if not df.empty:
                         st.session_state["last_date"] = etx_date
                         st.session_state["last_cat"] = elabel
                         fetch_txs.clear()
-                        st.experimental_rerun()
+                        rerun()
                     else:
                         st.error(resp.json().get("detail", "Update failed"))
         if cols[4].button("Delete", key=f"d{row['id']}"):
@@ -241,7 +244,7 @@ if not df.empty:
                     if resp.status_code == 204:
                         st.success("Deleted")
                         fetch_txs.clear()
-                        st.experimental_rerun()
+                        rerun()
                     else:
                         st.error("Delete failed")
 else:
