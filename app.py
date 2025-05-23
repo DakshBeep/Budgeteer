@@ -29,9 +29,18 @@ def handle_response(resp):
         rerun()
     return resp
 
+
+def error_detail(resp, default="Error"):
+    """Return error detail from a response, handling non-JSON bodies."""
+    try:
+        return resp.json().get("detail", default)
+    except Exception:
+        return resp.text or default
+
 st.title("Budgeteer – quick demo")
 
-if "token" not in st.session_state:
+token = st.session_state.get("token")
+if not token:
     st.sidebar.header("Account")
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
@@ -44,16 +53,16 @@ if "token" not in st.session_state:
                 st.session_state["token"] = r2.json()["token"]
                 rerun()
             else:
-                st.sidebar.error(r2.json().get("detail", "Auto-login failed"))
+                st.sidebar.error(error_detail(r2, "Auto-login failed"))
         else:
-            st.sidebar.error(r.json().get("detail", "Registration failed"))
+            st.sidebar.error(error_detail(r, "Registration failed"))
     if st.sidebar.button("Login"):
         r = requests.post(LOGIN, data={"username": username, "password": password})
         if r.status_code == 200:
             st.session_state["token"] = r.json()["token"]
             rerun()
         else:
-            st.sidebar.error(r.json().get("detail", "Login failed"))
+            st.sidebar.error(error_detail(r, "Login failed"))
     st.stop()
 
 st.sidebar.header("Account")
@@ -78,7 +87,7 @@ with st.sidebar.expander("Change password"):
             if resp.status_code == 200:
                 st.success("Password updated")
             else:
-                st.error(resp.json().get("detail", "Failed"))
+                st.error(error_detail(resp, "Failed"))
 
 # first time help
 if not st.session_state.get("seen_help"):
@@ -115,7 +124,7 @@ with col3:
 
 notes = st.text_input("Notes", value="")
 
-auth_headers = {"Authorization": f"Bearer {st.session_state['token']}"}  # JWT
+auth_headers = {"Authorization": f"Bearer {token}"}  # JWT
 
 @st.cache_data
 def fetch_goal(headers):
@@ -161,10 +170,10 @@ if st.button("Save"):
             st.success("Saved!")
             st.session_state["last_date"] = tx_date
             st.session_state["last_cat"] = label
-            get_txs.clear()
+            fetch_txs.clear()
             st.rerun()        # refresh the page
         else:
-            st.error(r.json().get("detail", "Failed to save"))
+            st.error(error_detail(r, "Failed to save"))
 
 # ── fetch + show data ────────────────────────────────────────
 @st.cache_data
@@ -173,7 +182,7 @@ def fetch_txs(headers):
     handle_response(r)
     if r.status_code == 200:
         return r.json()
-    st.error(r.json().get("detail", "Failed to fetch transactions"))
+    st.error(error_detail(r, "Failed to fetch transactions"))
     return []
 
 data = fetch_txs(auth_headers)
@@ -235,7 +244,7 @@ if not df.empty:
                         fetch_txs.clear()
                         rerun()
                     else:
-                        st.error(resp.json().get("detail", "Update failed"))
+                        st.error(error_detail(resp, "Update failed"))
         if cols[4].button("Delete", key=f"d{row['id']}"):
             with st.modal("Confirm delete"):
                 if st.button("Confirm", key=f"conf{row['id']}"):
@@ -338,7 +347,7 @@ if not df.empty:
         handle_response(r)
         if r.status_code == 200:
             return r.json()
-        st.error(r.json().get("detail", "Forecast failed"))
+        st.error(error_detail(r, "Forecast failed"))
         return []
 
     forecast_data = fetch_forecast(params, auth_headers)
