@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth'
 import SpendingChart from '../components/SpendingChart'
 import TransactionModal from '../components/TransactionModal'
 import QuickAddButtons from '../components/QuickAddButtons'
+import InsightsSummary from '../components/InsightsSummary'
 
 interface Transaction {
   id: number
@@ -281,6 +282,11 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+          {/* Insights Summary - Full width below charts */}
+          <div className="mt-8">
+            <InsightsSummary />
+          </div>
 
           {/* Transaction Modal */}
           <TransactionModal

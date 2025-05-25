@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Receipt, PiggyBank, Settings, TrendingUp, Calendar, HelpCircle } from 'lucide-react'
+import { Home, Receipt, PiggyBank, Settings, TrendingUp, Calendar, HelpCircle, Lightbulb } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -27,6 +27,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       path: '/analytics',
       name: 'Analytics',
       icon: TrendingUp,
+    },
+    {
+      path: '/insights',
+      name: 'Insights',
+      icon: Lightbulb,
     },
     {
       path: '/calendar',
