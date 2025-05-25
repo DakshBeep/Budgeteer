@@ -10,9 +10,8 @@ from dbmodels import Tx
 from schemas import TxIn
 from auth import get_current_user
 
-# Create engine directly to avoid circular import
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
-engine = create_engine(DB_URL, echo=False)
+# Import shared engine to avoid circular import
+from database import engine
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

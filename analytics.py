@@ -9,9 +9,8 @@ import os
 from auth import get_current_user
 from dbmodels import User, Tx
 
-# Create engine directly to avoid circular import
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
-engine = create_engine(DB_URL, echo=False)
+# Import shared engine to avoid circular import
+from database import engine
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 

@@ -12,9 +12,8 @@ from dbmodels import Tx, BudgetGoal
 from auth import get_current_user
 from models.forecasting import catboost_predict, neuralprophet_predict
 
-# Create engine directly to avoid circular import
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
-engine = create_engine(DB_URL, echo=False)
+# Import shared engine to avoid circular import
+from database import engine
 
 router = APIRouter()
 
