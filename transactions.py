@@ -1,22 +1,24 @@
-from datetime import datetime, timedelta
-import main
+from datetime import datetime, timedelta, date
+import os
 import pandas as pd
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, create_engine
 import logging
 
-import main
 from dbmodels import Tx
 from schemas import TxIn
 from auth import get_current_user
+
+# Import shared engine to avoid circular import
+from database import engine
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 def _extend_recurring(user, s: Session, months: int = 3) -> None:
-    today = main.date.today()
+    today = date.today()
     series_ids = s.exec(
         select(Tx.series_id)
         .where(Tx.user_id == user.id, Tx.recurring == True, Tx.series_id != None)
@@ -57,7 +59,7 @@ def _extend_recurring(user, s: Session, months: int = 3) -> None:
 def add_tx(tx_in: TxIn, user=Depends(get_current_user)) -> Tx:
     series_id = int(datetime.utcnow().timestamp()) if tx_in.recurring else None
     tx = Tx(**tx_in.dict(), user_id=user.id, series_id=series_id)
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         s.add(tx)
         if tx_in.recurring:
             for i in range(1, 4):
@@ -79,7 +81,7 @@ def add_tx(tx_in: TxIn, user=Depends(get_current_user)) -> Tx:
 
 @router.get("/tx", response_model=List[Tx])
 def list_tx(user=Depends(get_current_user)) -> List[Tx]:
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         _extend_recurring(user, s)
         stmt = select(Tx).where(Tx.user_id == user.id).order_by(Tx.tx_date.desc())
         return s.exec(stmt).all()
@@ -87,7 +89,7 @@ def list_tx(user=Depends(get_current_user)) -> List[Tx]:
 
 @router.put("/tx/{tx_id}", response_model=Tx)
 def update_tx(tx_id: int, tx_in: TxIn, propagate: bool = False, user=Depends(get_current_user)) -> Tx:
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         tx = s.get(Tx, tx_id)
         if not tx or tx.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
@@ -142,7 +144,7 @@ def update_tx(tx_id: int, tx_in: TxIn, propagate: bool = False, user=Depends(get
 
 @router.delete("/tx/{tx_id}", status_code=204)
 def delete_tx(tx_id: int, user=Depends(get_current_user)) -> None:
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         tx = s.get(Tx, tx_id)
         if not tx or tx.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
@@ -161,13 +163,13 @@ def delete_tx(tx_id: int, user=Depends(get_current_user)) -> None:
 
 @router.get("/reminders", response_model=List[Tx])
 def get_reminders(days: int = 30, user=Depends(get_current_user)) -> List[Tx]:
-    cutoff = main.date.today() + timedelta(days=days)
-    with Session(main.engine) as s:
+    cutoff = date.today() + timedelta(days=days)
+    with Session(engine) as s:
         _extend_recurring(user, s)
         stmt = select(Tx).where(
             Tx.user_id == user.id,
             Tx.recurring == True,
-            Tx.tx_date > main.date.today(),
+            Tx.tx_date > date.today(),
             Tx.tx_date <= cutoff,
         )
         return s.exec(stmt).all()

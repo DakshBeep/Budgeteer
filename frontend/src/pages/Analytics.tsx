@@ -2,21 +2,19 @@ import { useState, useEffect } from 'react'
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, ComposedChart
+  ComposedChart
 } from 'recharts'
 import { 
-  TrendingUp, TrendingDown, DollarSign, Calendar, 
-  Download, Filter, ArrowUp, ArrowDown, Activity,
-  PieChart as PieChartIcon, BarChart3, Wallet
+  TrendingUp, TrendingDown, Download, Activity, Wallet
 } from 'lucide-react'
 import axios from 'axios'
 import { format } from 'date-fns'
 import { useAuth } from '../hooks/useAuth'
 import { 
   getDateRangePresets, formatDateForAPI, formatCurrency, 
-  formatPercentage, CHART_COLORS, exportToCSV,
-  DateRange
+  formatPercentage, CHART_COLORS, exportToCSV
 } from '../utils/analytics'
+import type { DateRange } from '../utils/analytics'
 
 interface SummaryData {
   total_income: number
@@ -463,7 +461,7 @@ const Analytics = () => {
                       fill="#8884d8"
                       dataKey="amount"
                     >
-                      {categoryBreakdown.map((entry, index) => (
+                      {categoryBreakdown.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={CHART_COLORS.categories[index % CHART_COLORS.categories.length]} />
                       ))}
                     </Pie>

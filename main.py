@@ -14,10 +14,7 @@ except Exception:
                         os.environ.setdefault(k, v)
 
 import os
-from sqlmodel import create_engine
-
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
-engine = create_engine(DB_URL, echo=False)
+from database import engine
 from auth import router as auth_router
 from transactions import router as tx_router
 from forecast import router as forecast_router

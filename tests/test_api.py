@@ -12,13 +12,29 @@ fp.multipart = multipart  # make FastAPI think python-multipart is installed
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, select
 import main
+import database
+import auth
+import transactions
+import forecast
+import analytics
 
 @pytest.fixture(autouse=True)
 def temp_db(monkeypatch):
     fd, path = tempfile.mkstemp()
     os.close(fd)
     engine = create_engine(f"sqlite:///{path}")
+    # Patch all modules to use test engine
     main.engine = engine
+    database.engine = engine
+    auth.engine = engine
+    transactions.engine = engine
+    forecast.engine = engine
+    analytics.engine = engine
+    monkeypatch.setattr(database, "engine", engine)
+    monkeypatch.setattr(auth, "engine", engine)
+    monkeypatch.setattr(transactions, "engine", engine)
+    monkeypatch.setattr(forecast, "engine", engine)
+    monkeypatch.setattr(analytics, "engine", engine)
     SQLModel.metadata.create_all(engine)
     yield
     os.remove(path)
@@ -94,6 +110,8 @@ def test_budget_goal_new_month(monkeypatch):
             return next_month
 
     monkeypatch.setattr(main, "date", FixedDate)
+    monkeypatch.setattr(transactions, "date", FixedDate)
+    monkeypatch.setattr(forecast, "date", FixedDate)
 
     r = client.get("/goal", headers=headers)
     assert r.status_code == 200
@@ -170,6 +188,8 @@ def test_recurring_extension(monkeypatch):
             return future_day
 
     monkeypatch.setattr(main, "date", FixedDate)
+    monkeypatch.setattr(transactions, "date", FixedDate)
+    monkeypatch.setattr(forecast, "date", FixedDate)
 
     r = client.get("/tx", headers=headers)
     assert len(r.json()) == 6
