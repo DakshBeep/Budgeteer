@@ -19,6 +19,7 @@ from auth import router as auth_router
 from transactions import router as tx_router
 from forecast import router as forecast_router
 from analytics import router as analytics_router
+from insights import router as insights_router
 import dbmodels
 from datetime import date, timedelta
 from dbmodels import User, Tx, BudgetGoal
@@ -39,11 +40,16 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def init_db() -> None:
+async def startup_event() -> None:
     SQLModel.metadata.create_all(engine)
+    # Start the insight scheduler
+    from scheduler import start_scheduler
+    await start_scheduler()
+    logging.info("Started insight scheduler")
 
 
 app.include_router(auth_router)
 app.include_router(tx_router)
 app.include_router(forecast_router)
 app.include_router(analytics_router)
+app.include_router(insights_router)
