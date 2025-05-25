@@ -9,11 +9,17 @@ import Transactions from './pages/Transactions'
 import Analytics from './pages/Analytics'
 import Insights from './pages/Insights'
 import Settings from './pages/Settings'
+import DebugPanel from './components/DebugPanel'
+import { ErrorTestingPanel } from './utils/errorTesting'
 
 function App() {
+  console.log('App component rendering')
+  
   return (
     <AuthProvider>
       <Router>
+        <DebugPanel />
+        <ErrorTestingPanel />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />

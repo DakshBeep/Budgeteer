@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LightBulbIcon, 
-  TrendingUpIcon, 
+  ArrowTrendingUpIcon as TrendingUpIcon, 
   ExclamationTriangleIcon,
   SparklesIcon,
   ChartBarIcon,
@@ -672,7 +672,7 @@ const Insights = () => {
         )}
       </AnimatePresence>
 
-      <style jsx>{`
+      <style>{`
         @keyframes confetti-fall {
           to {
             transform: translateY(100vh) rotate(720deg);

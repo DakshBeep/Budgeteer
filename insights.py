@@ -14,7 +14,7 @@ from dbmodels import (
     UserPreferences, FinancialHealthScore, Tx, BudgetGoal
 )
 from insights_engine import InsightsGenerator
-from schemas import User as UserSchema
+from dbmodels import User as UserSchema
 
 
 router = APIRouter()
