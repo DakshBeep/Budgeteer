@@ -26,6 +26,7 @@ const REMEMBER_KEY = 'remember_me'
 const USER_KEY = 'user_data'
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  console.log('AuthProvider rendering...')
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
