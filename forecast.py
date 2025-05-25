@@ -1,23 +1,26 @@
-from datetime import timedelta
-import main
+from datetime import timedelta, date
+import os
 from typing import List
 from functools import lru_cache
 
 import pandas as pd
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, create_engine
 
-import main
 from dbmodels import Tx, BudgetGoal
 from auth import get_current_user
 from models.forecasting import catboost_predict, neuralprophet_predict
+
+# Create engine directly to avoid circular import
+DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
+engine = create_engine(DB_URL, echo=False)
 
 router = APIRouter()
 
 
 def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         txs = s.exec(select(Tx).where(Tx.user_id == user_id)).all()
         df = pd.DataFrame([{"tx_date": t.tx_date, "amount": t.amount} for t in txs])
         df = df.groupby("tx_date")["amount"].sum().sort_index()
@@ -74,7 +77,7 @@ def cached_forecast(user_id: int, days: int, model: str, last_ts: float):
 
 @router.get("/forecast")
 def get_forecast(days: int = 7, model: str = "linear", user=Depends(get_current_user)):
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         txs = s.exec(select(Tx).where(Tx.user_id == user.id)).all()
         if not txs:
             raise HTTPException(status_code=404, detail="No transactions")
@@ -85,8 +88,8 @@ def get_forecast(days: int = 7, model: str = "linear", user=Depends(get_current_
 
 @router.get("/goal")
 def get_goal(user=Depends(get_current_user)):
-    month_start = main.date.today().replace(day=1)
-    with Session(main.engine) as s:
+    month_start = date.today().replace(day=1)
+    with Session(engine) as s:
         goal = s.exec(
             select(BudgetGoal).where(
                 BudgetGoal.user_id == user.id,
@@ -112,8 +115,8 @@ def get_goal(user=Depends(get_current_user)):
 
 @router.post("/goal")
 def set_goal(amount: float, user=Depends(get_current_user)):
-    month_start = main.date.today().replace(day=1)
-    with Session(main.engine) as s:
+    month_start = date.today().replace(day=1)
+    with Session(engine) as s:
         goal = s.exec(
             select(BudgetGoal).where(
                 BudgetGoal.user_id == user.id,

@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, create_engine
 from datetime import date, datetime, timedelta
 from typing import Literal, List, Dict, Optional, Any
 from calendar import monthrange
 import json
+import os
 
-import main
 from auth import get_current_user
 from dbmodels import User, Tx
+
+# Create engine directly to avoid circular import
+DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
+engine = create_engine(DB_URL, echo=False)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -18,7 +22,7 @@ def get_summary(
     user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Get overall financial summary for date range"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         # Get all transactions in date range
         transactions = session.exec(
             select(Tx).where(
@@ -62,7 +66,7 @@ def get_category_breakdown(
     user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Get spending breakdown by category"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         transactions = session.exec(
             select(Tx).where(
                 Tx.user_id == user.id,
@@ -101,7 +105,7 @@ def get_trends(
     user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Get income/expense trends over time"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         transactions = session.exec(
             select(Tx).where(
                 Tx.user_id == user.id,
@@ -171,7 +175,7 @@ def get_comparison(
     user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Compare two time periods"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         # Get current period data
         current_txs = session.exec(
             select(Tx).where(
@@ -227,7 +231,7 @@ def get_patterns(
     user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Analyze spending patterns"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         transactions = session.exec(
             select(Tx).where(
                 Tx.user_id == user.id,
@@ -304,7 +308,7 @@ def get_budget_performance(
     user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Get budget vs actual performance over time"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         # Get all budget goals in the date range
         from dbmodels import BudgetGoal
         
@@ -363,7 +367,7 @@ def get_cashflow(
     user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Get cash flow analysis"""
-    with Session(main.engine) as session:
+    with Session(engine) as session:
         transactions = session.exec(
             select(Tx).where(
                 Tx.user_id == user.id,

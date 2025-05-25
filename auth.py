@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Body, Form
-from sqlmodel import Session, select
+from sqlmodel import Session, select, create_engine
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import jwt
 import os
 import logging
 
-import main
 from dbmodels import User
+
+# Create engine directly to avoid circular import
+DB_URL = os.getenv("DATABASE_URL", "sqlite:///budgeteer.db")
+engine = create_engine(DB_URL, echo=False)
 
 router = APIRouter()
 
@@ -31,7 +34,7 @@ def get_current_user(authorization: str = Header(None)) -> User:
         user_id = payload.get("user_id")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         user = s.get(User, user_id)
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
@@ -40,7 +43,7 @@ def get_current_user(authorization: str = Header(None)) -> User:
 
 @router.post("/register")
 def register(username: str = Form(...), password: str = Form(...)):
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         existing = s.exec(select(User).where(User.username == username)).first()
         if existing:
             raise HTTPException(status_code=400, detail="Username taken")
@@ -53,7 +56,7 @@ def register(username: str = Form(...), password: str = Form(...)):
 
 @router.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         user = s.exec(select(User).where(User.username == username)).first()
         if not user or not pwd_context.verify(password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -73,7 +76,7 @@ def change_password(
     new_password: str = Body(...),
     user: User = Depends(get_current_user),
 ):
-    with Session(main.engine) as s:
+    with Session(engine) as s:
         db_user = s.get(User, user.id)
         if not pwd_context.verify(current_password, db_user.password_hash):
             raise HTTPException(status_code=400, detail="Incorrect current password")
