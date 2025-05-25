@@ -84,7 +84,16 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
     try {
       const finalAmount = type === 'expense' ? -amountNum : amountNum
       
-      await axios.post(
+      console.log('Submitting transaction:', {
+        tx_date: date,
+        amount: finalAmount,
+        label: category,
+        notes: notes || undefined,
+        recurring,
+      })
+      console.log('Using token:', token)
+      
+      const response = await axios.post(
         `${import.meta.env.VITE_API_BASE}/tx`,
         {
           tx_date: date,
@@ -97,6 +106,8 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
           headers: { Authorization: `Bearer ${token}` },
         }
       )
+      
+      console.log('Transaction response:', response.data)
 
       // Save last used category
       localStorage.setItem('lastCategory_' + type, category)
@@ -110,6 +121,8 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
         onClose()
       }, 1500)
     } catch (err: any) {
+      console.error('Transaction error:', err)
+      console.error('Error response:', err.response)
       setError(err.response?.data?.detail || 'Failed to save transaction')
     } finally {
       setLoading(false)

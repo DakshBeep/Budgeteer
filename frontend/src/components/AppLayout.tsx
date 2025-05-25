@@ -29,7 +29,7 @@ const AppLayout = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex overflow-hidden bg-gray-50">
       {/* Top Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -112,11 +112,9 @@ const AppLayout = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content */}
-      <div className="lg:pl-64 flex flex-col flex-1">
-        <main className="flex-1">
-          <div className="pt-16">
-            <Outlet />
-          </div>
+      <div className="flex-1 flex flex-col lg:pl-64">
+        <main className="flex-1 overflow-y-auto pt-16 bg-gray-50">
+          <Outlet />
         </main>
       </div>
 

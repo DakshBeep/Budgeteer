@@ -100,9 +100,14 @@ const Transactions = () => {
   }
 
   return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
+    <div className="min-h-full bg-gray-50">
+      <div className="py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 tracking-tight">Transactions</h2>
+              <p className="mt-2 text-lg text-gray-600">Manage and track all your income and expenses</p>
+            </div>
             <button
               onClick={handleAddClick}
               className="flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
@@ -112,23 +117,23 @@ const Transactions = () => {
             </button>
           </div>
 
-          <div className="mb-6">
-            <div className="relative">
+          <div className="mb-8">
+            <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search transactions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
           </div>
 
 
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
@@ -186,16 +191,17 @@ const Transactions = () => {
               </tbody>
             </table>
           </div>
-        </div>
 
-      {/* Transaction Modal */}
-      <TransactionModal
+          {/* Transaction Modal */}
+          <TransactionModal
         isOpen={showTransactionModal}
         onClose={() => setShowTransactionModal(false)}
         onSuccess={fetchTransactions}
         initialType={modalType}
         initialCategory={modalCategory}
-      />
+          />
+        </div>
+      </div>
     </div>
   )
 }

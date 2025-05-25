@@ -17,10 +17,13 @@ const SpendingChart = ({ data }: SpendingChartProps) => {
   const formatCurrency = (value: number) => `$${value.toFixed(0)}`
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Spending Trend</h3>
-        <div className={`flex items-center text-sm ${trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Spending Trend</h3>
+          <p className="text-sm text-gray-500 mt-1">Last 7 days</p>
+        </div>
+        <div className={`flex items-center text-sm font-medium ${trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
           {trend > 0 ? (
             <>
               <TrendingUp className="h-4 w-4 mr-1" />

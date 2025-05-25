@@ -48,7 +48,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     >
       <div className="flex flex-col h-full">
         {/* Navigation */}
-        <nav className="flex-1 px-2 py-4 space-y-1">
+        <nav className="flex-1 px-4 py-6 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon
             return (

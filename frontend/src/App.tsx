@@ -26,10 +26,10 @@ function App() {
           >
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
-            <Route path="/budget" element={<div className="p-8"><h1 className="text-2xl">Budget Page (Coming Soon)</h1></div>} />
-            <Route path="/analytics" element={<div className="p-8"><h1 className="text-2xl">Analytics Page (Coming Soon)</h1></div>} />
-            <Route path="/calendar" element={<div className="p-8"><h1 className="text-2xl">Calendar Page (Coming Soon)</h1></div>} />
-            <Route path="/settings" element={<div className="p-8"><h1 className="text-2xl">Settings Page (Coming Soon)</h1></div>} />
+            <Route path="/budget" element={<div className="p-8"><div className="max-w-7xl mx-auto"><h1 className="text-3xl font-bold text-gray-900">Budget</h1><p className="mt-2 text-base text-gray-600">Budget management coming soon!</p></div></div>} />
+            <Route path="/analytics" element={<div className="p-8"><div className="max-w-7xl mx-auto"><h1 className="text-3xl font-bold text-gray-900">Analytics</h1><p className="mt-2 text-base text-gray-600">Analytics coming soon!</p></div></div>} />
+            <Route path="/calendar" element={<div className="p-8"><div className="max-w-7xl mx-auto"><h1 className="text-3xl font-bold text-gray-900">Calendar</h1><p className="mt-2 text-base text-gray-600">Calendar view coming soon!</p></div></div>} />
+            <Route path="/settings" element={<div className="p-8"><div className="max-w-7xl mx-auto"><h1 className="text-3xl font-bold text-gray-900">Settings</h1><p className="mt-2 text-base text-gray-600">Settings coming soon!</p></div></div>} />
           </Route>
         </Routes>
       </Router>

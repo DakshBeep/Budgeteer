@@ -18,7 +18,9 @@ const Login = () => {
   const from = location.state?.from?.pathname || '/dashboard'
 
   useEffect(() => {
+    console.log('Login page - isAuthenticated:', isAuthenticated)
     if (isAuthenticated) {
+      console.log('User is authenticated, navigating to:', from)
       navigate(from, { replace: true })
     }
   }, [isAuthenticated, navigate, from])
@@ -47,9 +49,12 @@ const Login = () => {
 
     setIsLoading(true)
     try {
+      console.log('Attempting login with:', email)
       await login(email, password, rememberMe)
+      console.log('Login successful, navigating to:', from)
       navigate(from, { replace: true })
     } catch (err: any) {
+      console.error('Login failed:', err)
       setError(err.message || 'Invalid email or password')
     } finally {
       setIsLoading(false)

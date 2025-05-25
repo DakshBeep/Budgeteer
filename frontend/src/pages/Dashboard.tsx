@@ -143,19 +143,21 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Welcome back! Here's your financial overview.
-        </p>
-      </div>
+    <div className="min-h-full bg-gray-50">
+      <div className="py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Page Header */}
+          <div className="mb-10">
+            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+            <p className="mt-3 text-lg text-gray-600">
+              Welcome back! Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
+            </p>
+          </div>
 
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Current Balance */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          {/* Quick Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {/* Current Balance */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-50 rounded-lg">
               <Wallet className="h-6 w-6 text-blue-600" />
@@ -171,8 +173,8 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* This Month Spent */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            {/* This Month Spent */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-red-50 rounded-lg">
               <TrendingUp className="h-6 w-6 text-red-600" />
@@ -188,8 +190,8 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Budget Remaining */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            {/* Budget Remaining */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-green-50 rounded-lg">
               <Target className="h-6 w-6 text-green-600" />
@@ -218,18 +220,18 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <QuickAddButtons onQuickAdd={handleQuickAdd} />
-      </div>
+          {/* Quick Actions */}
+          <div className="mb-10">
+            <QuickAddButtons onQuickAdd={handleQuickAdd} />
+          </div>
 
-      {/* Charts and Recent Transactions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Charts and Recent Transactions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Spending Chart */}
         <SpendingChart data={chartData} />
 
-        {/* Recent Transactions */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+            {/* Recent Transactions */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
             <Link
@@ -280,14 +282,16 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Transaction Modal */}
-      <TransactionModal
+          {/* Transaction Modal */}
+          <TransactionModal
         isOpen={showTransactionModal}
         onClose={() => setShowTransactionModal(false)}
         onSuccess={fetchData}
         initialType={modalType}
         initialCategory={modalCategory}
-      />
+          />
+        </div>
+      </div>
     </div>
   )
 }
