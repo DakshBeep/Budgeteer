@@ -21,6 +21,7 @@ engine = create_engine(DB_URL, echo=False)
 from auth import router as auth_router
 from transactions import router as tx_router
 from forecast import router as forecast_router
+from analytics import router as analytics_router
 import dbmodels
 from datetime import date, timedelta
 from dbmodels import User, Tx, BudgetGoal
@@ -48,3 +49,4 @@ def init_db() -> None:
 app.include_router(auth_router)
 app.include_router(tx_router)
 app.include_router(forecast_router)
+app.include_router(analytics_router)
