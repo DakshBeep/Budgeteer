@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string, remember = false) => {
     try {
+      console.log('Making login request to:', `${import.meta.env.VITE_API_BASE}/login`)
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE}/login`,
         new URLSearchParams({ username, password }),
@@ -104,12 +105,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       )
 
-      const { access_token } = response.data
+      console.log('Login response:', response.data)
+      
+      const { token, access_token } = response.data
+      const authToken = token || access_token // Handle both possible field names
       const userData = { username }
 
       // Store in appropriate storage based on remember me
       const storage = remember ? localStorage : sessionStorage
-      storage.setItem(TOKEN_KEY, access_token)
+      storage.setItem(TOKEN_KEY, authToken)
       storage.setItem(USER_KEY, JSON.stringify(userData))
       if (remember) {
         localStorage.setItem(REMEMBER_KEY, 'true')
@@ -117,10 +121,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem(REMEMBER_KEY)
       }
 
-      setToken(access_token)
+      setToken(authToken)
       setUser(userData)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`
+      
+      console.log('Login successful, token set:', authToken)
+      console.log('User set:', userData)
+      console.log('isAuthenticated will be:', !!authToken && !!userData)
     } catch (error: any) {
+      console.error('Login error:', error)
+      console.error('Error response:', error.response)
       throw new Error(error.response?.data?.detail || 'Login failed')
     }
   }
