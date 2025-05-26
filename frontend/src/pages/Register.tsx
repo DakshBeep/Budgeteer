@@ -96,10 +96,10 @@ const Register = () => {
         </div>
         
         <h2 className="text-3xl font-bold text-center mb-2 text-gray-800">
-          Create your account
+          Join CashBFF
         </h2>
         <p className="text-center text-gray-600 mb-8">
-          Join us and start managing your budget
+          Your financial best friend is here to help
         </p>
 
         {error && (

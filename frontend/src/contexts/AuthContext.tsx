@@ -198,7 +198,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             animation: 'spin 1s linear infinite',
             margin: '0 auto'
           }}></div>
-          <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading Budgeteer...</p>
+          <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading CashBFF...</p>
         </div>
       </div>
     )

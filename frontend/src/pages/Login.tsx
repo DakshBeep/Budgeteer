@@ -71,10 +71,10 @@ const Login = () => {
         </div>
         
         <h2 className="text-3xl font-bold text-center mb-2 text-gray-800">
-          Welcome back
+          Welcome back to CashBFF
         </h2>
         <p className="text-center text-gray-600 mb-8">
-          Sign in to your account to continue
+          Sign in to manage your finances with your BFF
         </p>
 
         {error && (
