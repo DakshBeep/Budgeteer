@@ -37,13 +37,23 @@ In Railway dashboard, add these variables:
 ```env
 JWT_SECRET=<generate-a-secure-32-char-string>
 ALLOWED_ORIGINS=https://<your-railway-domain>.railway.app
+DATABASE_URL=${{RAILWAY_DATABASE_URL}}  # Auto-set if using Railway PostgreSQL
 SMTP_HOST=smtp.gmail.com  # Optional: for email features
 SMTP_PORT=587              # Optional
 SMTP_USER=your-email       # Optional
 SMTP_PASSWORD=your-pass    # Optional
 ```
 
-### 4. Deploy
+**IMPORTANT**: Do NOT set the PORT variable - Railway sets this automatically!
+
+### 4. Configure Start Command (IMPORTANT!)
+
+In Railway service settings:
+- **Start Command**: Leave empty (uses Dockerfile CMD)
+- **OR if that doesn't work**: `./start.sh`
+- **DO NOT USE**: `uvicorn main:app --port 8000` (wrong port!)
+
+### 5. Deploy
 
 #### Option A: Deploy from GitHub
 1. Connect your GitHub repo to Railway
