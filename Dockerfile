@@ -36,16 +36,21 @@ COPY --from=frontend-build /app/frontend/dist ./static
 # Create directory for SQLite database (if using SQLite)
 RUN mkdir -p /app/data
 
+# Make start script executable
+RUN chmod +x start.sh
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
 
-# Expose the port
-EXPOSE 8000
+# Don't set PORT here - let Railway provide it
+# ENV PORT=8000
 
-# Health check for Railway
+# Expose port (Railway ignores this but good for documentation)
+EXPOSE $PORT
+
+# Health check for Railway - use the PORT env var
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+  CMD curl -f http://localhost:$PORT/health || exit 1
 
-# Start the application
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start the application using the start script
+CMD ["./start.sh"]
