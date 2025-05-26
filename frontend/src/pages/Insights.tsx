@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import PeerComparison from '../components/PeerComparison';
+import { buildApiUrl } from '../utils/api'
 
 interface Insight {
   id: number;
@@ -72,7 +73,7 @@ const Insights = () => {
       if (selectedType !== 'all') params.append('type', selectedType);
       if (showUnreadOnly) params.append('is_read', 'false');
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights?${params}`, {
+      const response = await fetch(buildApiUrl(`/insights?${params}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +104,7 @@ const Insights = () => {
 
   const fetchHealthScore = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/health-score`, {
+      const response = await fetch(buildApiUrl('/insights/health-score'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -120,7 +121,7 @@ const Insights = () => {
 
   const generateInsights = useCallback(async () => {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/generate`, {
+      await fetch(buildApiUrl('/insights/generate'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

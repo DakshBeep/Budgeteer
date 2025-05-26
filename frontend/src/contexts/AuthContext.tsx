@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
+import { buildApiUrl } from '../utils/api'
 
 interface User {
   username: string
@@ -95,9 +96,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string, remember = false) => {
     try {
-      console.log('Making login request to:', `${import.meta.env.VITE_API_BASE}/login`)
+      const loginUrl = buildApiUrl('/login');
+      console.log('Making login request to:', loginUrl)
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE}/login`,
+        loginUrl,
         new URLSearchParams({ username, password }),
         {
           headers: {
@@ -140,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Register the user
       await axios.post(
-        `${import.meta.env.VITE_API_BASE}/register`,
+        buildApiUrl('/register'),
         new URLSearchParams({ username, password }),
         {
           headers: {

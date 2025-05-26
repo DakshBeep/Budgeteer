@@ -4,6 +4,7 @@ import { Plus, Search, Calendar, DollarSign, Tag, Edit2, Trash2 } from 'lucide-r
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import TransactionModal from '../components/TransactionModal'
+import { buildApiUrl } from '../utils/api'
 
 interface Transaction {
   id: number
@@ -51,7 +52,7 @@ const Transactions = () => {
     if (!token) return
 
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE}/tx`, {
+      const response = await axios.get(buildApiUrl('/tx'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTransactions(response.data)
@@ -74,7 +75,7 @@ const Transactions = () => {
     
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
-        await axios.delete(`${import.meta.env.VITE_API_BASE}/tx/${id}`, {
+        await axios.delete(buildApiUrl(`/tx/${id}`), {
           headers: { Authorization: `Bearer ${token}` },
         })
         fetchTransactions()

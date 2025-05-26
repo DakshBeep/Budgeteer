@@ -34,11 +34,30 @@ app = FastAPI(title="Budgeteer API", version="1.0.0")
 # Get allowed origins from environment or use defaults
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:8501").split(",")
 
+# Handle various environment variable names for Railway
+API_BASE = os.getenv("API_BASE")
+if API_BASE:
+    ALLOWED_ORIGINS.append(API_BASE)
+    # Add both http and https versions
+    if API_BASE.startswith("https://"):
+        ALLOWED_ORIGINS.append(API_BASE.replace("https://", "http://"))
+    elif API_BASE.startswith("http://"):
+        ALLOWED_ORIGINS.append(API_BASE.replace("http://", "https://"))
+
 # Add Railway's domain if RAILWAY_STATIC_URL is set
 RAILWAY_URL = os.getenv("RAILWAY_STATIC_URL")
 if RAILWAY_URL:
     ALLOWED_ORIGINS.append(f"https://{RAILWAY_URL}")
     ALLOWED_ORIGINS.append(f"http://{RAILWAY_URL}")
+
+# Add the actual deployment URL if provided
+RAILWAY_PUBLIC_DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if RAILWAY_PUBLIC_DOMAIN:
+    ALLOWED_ORIGINS.append(f"https://{RAILWAY_PUBLIC_DOMAIN}")
+    ALLOWED_ORIGINS.append(f"http://{RAILWAY_PUBLIC_DOMAIN}")
+
+# Log the allowed origins for debugging
+logging.info(f"Allowed CORS origins: {ALLOWED_ORIGINS}")
 
 # Configure CORS
 app.add_middleware(
@@ -54,6 +73,28 @@ app.add_middleware(
 async def health_check():
     """Health check endpoint for Railway"""
     return {"status": "healthy", "service": "budgeteer-api"}
+
+# Debug endpoint to check deployment
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to check deployment status"""
+    import sys
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    return {
+        "status": "running",
+        "python_version": sys.version,
+        "static_dir": static_dir,
+        "static_exists": os.path.exists(static_dir),
+        "static_contents": os.listdir(static_dir) if os.path.exists(static_dir) else [],
+        "cwd": os.getcwd(),
+        "env_vars": {
+            "PORT": os.getenv("PORT"),
+            "DATABASE_URL": os.getenv("DATABASE_URL"),
+            "API_BASE": os.getenv("API_BASE"),
+            "RAILWAY_STATIC_URL": os.getenv("RAILWAY_STATIC_URL"),
+            "RAILWAY_PUBLIC_DOMAIN": os.getenv("RAILWAY_PUBLIC_DOMAIN")
+        }
+    }
 
 # API routes must be included before static file handling
 app.include_router(auth_router)
@@ -71,14 +112,34 @@ async def startup_event() -> None:
     logging.info("Started insight scheduler")
 
 # Serve React static files (must be after API routes)
-if os.path.exists("static"):
-    # Mount static files directory
-    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+logging.info(f"Looking for static files in: {static_dir}")
+logging.info(f"Static directory exists: {os.path.exists(static_dir)}")
+
+if os.path.exists(static_dir):
+    # Check if assets directory exists
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        logging.info(f"Mounted assets directory: {assets_dir}")
+    else:
+        logging.warning(f"Assets directory not found: {assets_dir}")
+    
+    # Check if index.html exists
+    index_path = os.path.join(static_dir, "index.html")
+    if not os.path.exists(index_path):
+        logging.error(f"index.html not found at: {index_path}")
+    else:
+        logging.info(f"Found index.html at: {index_path}")
     
     # Serve index.html for the root path
     @app.get("/")
     async def serve_root():
-        return FileResponse("static/index.html")
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        else:
+            return {"error": "Frontend not built", "message": "Run npm run build in frontend directory"}
     
     # Catch-all route for React Router (must be last)
     @app.get("/{full_path:path}")
@@ -96,14 +157,19 @@ if os.path.exists("static"):
             raise HTTPException(status_code=404, detail="Not found")
         
         # Check if it's a static file request
-        file_path = os.path.join("static", full_path)
+        file_path = os.path.join(static_dir, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
         
         # For all other routes, serve the React app
-        return FileResponse("static/index.html")
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        else:
+            raise HTTPException(status_code=404, detail="Frontend not found")
 else:
+    logging.warning(f"Static directory not found: {static_dir}")
     @app.get("/")
     async def root():
         """Root endpoint when no static files are present"""
-        return {"message": "Budgeteer API", "docs": "/docs"}
+        return {"message": "Budgeteer API", "docs": "/docs", "static_dir": static_dir, "exists": os.path.exists(static_dir)}
