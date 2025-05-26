@@ -785,3 +785,193 @@ INFO:scheduler:Generating insights for user 13
 INFO:scheduler:Generating insights for user 14
 INFO:scheduler:Generating insights for user 15
 INFO:     Application startup complete.
+INFO:scheduler:Generating insights for user 1
+INFO:scheduler:Generating insights for user 2
+INFO:scheduler:Generating insights for user 3
+INFO:scheduler:Generating insights for user 4
+INFO:scheduler:Generating insights for user 5
+INFO:scheduler:Generating insights for user 6
+INFO:scheduler:Generating insights for user 7
+INFO:scheduler:Generating insights for user 8
+INFO:scheduler:Generating insights for user 9
+INFO:scheduler:Generating insights for user 10
+INFO:scheduler:Generating insights for user 11
+INFO:scheduler:Generating insights for user 12
+INFO:scheduler:Generating insights for user 13
+INFO:scheduler:Generating insights for user 14
+INFO:scheduler:Generating insights for user 15
+INFO:scheduler:Generating insights for user 1
+INFO:scheduler:Generating insights for user 2
+INFO:scheduler:Generating insights for user 3
+INFO:scheduler:Generating insights for user 4
+INFO:scheduler:Generating insights for user 5
+INFO:scheduler:Generating insights for user 6
+INFO:scheduler:Generating insights for user 7
+INFO:scheduler:Generating insights for user 8
+INFO:scheduler:Generating insights for user 9
+INFO:scheduler:Generating insights for user 10
+INFO:scheduler:Generating insights for user 11
+INFO:scheduler:Generating insights for user 12
+INFO:scheduler:Generating insights for user 13
+INFO:scheduler:Generating insights for user 14
+INFO:scheduler:Generating insights for user 15
+INFO:     127.0.0.1:53200 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53242 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+WARNING:  WatchFiles detected changes in 'test_frontend.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36172]
+INFO:     Started server process [45539]
+INFO:     Waiting for application startup.
+WARNING:email_service:Email service not fully configured. Email sending will be disabled.
+INFO:root:Started insight scheduler
+INFO:scheduler:Insight scheduler started
+INFO:scheduler:Generating insights for user 1
+INFO:scheduler:Generating insights for user 2
+INFO:scheduler:Generating insights for user 3
+INFO:scheduler:Generating insights for user 4
+INFO:scheduler:Generating insights for user 5
+INFO:scheduler:Generating insights for user 6
+INFO:scheduler:Generating insights for user 7
+INFO:scheduler:Generating insights for user 8
+INFO:scheduler:Generating insights for user 9
+INFO:scheduler:Generating insights for user 10
+INFO:scheduler:Generating insights for user 11
+INFO:scheduler:Generating insights for user 12
+INFO:scheduler:Generating insights for user 13
+INFO:scheduler:Generating insights for user 14
+INFO:scheduler:Generating insights for user 15
+INFO:     Application startup complete.
+INFO:     127.0.0.1:53311 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53313 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+WARNING:  WatchFiles detected changes in 'test_frontend.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [45539]
+INFO:     Started server process [45646]
+INFO:     Waiting for application startup.
+WARNING:email_service:Email service not fully configured. Email sending will be disabled.
+INFO:root:Started insight scheduler
+INFO:scheduler:Insight scheduler started
+INFO:scheduler:Generating insights for user 1
+INFO:scheduler:Generating insights for user 2
+INFO:scheduler:Generating insights for user 3
+INFO:scheduler:Generating insights for user 4
+INFO:scheduler:Generating insights for user 5
+INFO:scheduler:Generating insights for user 6
+INFO:scheduler:Generating insights for user 7
+INFO:scheduler:Generating insights for user 8
+INFO:scheduler:Generating insights for user 9
+INFO:scheduler:Generating insights for user 10
+INFO:scheduler:Generating insights for user 11
+INFO:scheduler:Generating insights for user 12
+INFO:scheduler:Generating insights for user 13
+INFO:scheduler:Generating insights for user 14
+INFO:scheduler:Generating insights for user 15
+INFO:     Application startup complete.
+WARNING:passlib.handlers.bcrypt:(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/Users/daksh/Documents/College/budgeteer-backend/.venv/lib/python3.12/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+INFO:     127.0.0.1:53701 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "OPTIONS /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "OPTIONS /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "OPTIONS /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "POST /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "POST /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "OPTIONS /analytics/summary?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "OPTIONS /analytics/category-breakdown?start_date=2025-04-27&end_date=2025-05-26&type=expense HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "OPTIONS /analytics/trends?start_date=2025-04-27&end_date=2025-05-26&interval=daily HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /analytics/budget-performance?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /analytics/cashflow?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53719 - "OPTIONS /analytics/patterns?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "OPTIONS /analytics/summary?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "OPTIONS /analytics/category-breakdown?start_date=2025-04-27&end_date=2025-05-26&type=expense HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "OPTIONS /analytics/trends?start_date=2025-04-27&end_date=2025-05-26&interval=daily HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "OPTIONS /analytics/budget-performance?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "OPTIONS /analytics/cashflow?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53719 - "OPTIONS /analytics/patterns?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "GET /analytics/summary?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /analytics/category-breakdown?start_date=2025-04-27&end_date=2025-05-26&type=expense HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "GET /analytics/trends?start_date=2025-04-27&end_date=2025-05-26&interval=daily HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53719 - "GET /analytics/patterns?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "GET /analytics/cashflow?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /analytics/budget-performance?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /analytics/category-breakdown?start_date=2025-04-27&end_date=2025-05-26&type=expense HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53707 - "GET /analytics/summary?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "OPTIONS /analytics/comparison?current_start=2025-04-27&current_end=2025-05-26&previous_start=2025-03-28&previous_end=2025-04-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53716 - "GET /analytics/trends?start_date=2025-04-27&end_date=2025-05-26&interval=daily HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53705 - "GET /analytics/cashflow?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53719 - "GET /analytics/patterns?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /analytics/budget-performance?start_date=2025-04-27&end_date=2025-05-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /analytics/comparison?current_start=2025-04-27&current_end=2025-05-26&previous_start=2025-03-28&previous_end=2025-04-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /analytics/comparison?current_start=2025-04-27&current_end=2025-05-26&previous_start=2025-03-28&previous_end=2025-04-26 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53701 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53703 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53802 - "POST /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53806 - "POST /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53800 - "GET /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53804 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53806 - "GET /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53800 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53815 - "OPTIONS /insights/peer-comparison HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53817 - "OPTIONS /insights/savings-opportunities HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53818 - "OPTIONS /insights/peer-comparison HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53819 - "OPTIONS /insights/savings-opportunities HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53815 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53817 - "GET /insights/savings-opportunities HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53819 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53815 - "GET /insights/savings-opportunities HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53825 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53826 - "GET /insights/savings-opportunities HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53825 - "GET /insights/peer-comparison HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53828 - "GET /insights/savings-opportunities HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53897 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53899 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53901 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53901 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53901 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53901 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53899 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53899 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53899 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53897 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53954 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53953 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53956 - "GET /goal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53958 - "GET /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53958 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53956 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53956 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53958 - "GET /insights/health-score HTTP/1.1" 200 OK

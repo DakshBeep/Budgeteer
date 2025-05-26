@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UsersIcon, ChartBarIcon, TrendingDownIcon } from '@heroicons/react/24/outline';
+import { UsersIcon, ChartBarIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 
 interface PeerComparisonData {
   overall_percentile: number;
@@ -201,7 +201,7 @@ export default function PeerComparison() {
           className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow p-6"
         >
           <div className="flex items-center gap-3 mb-4">
-            <TrendingDownIcon className="h-6 w-6 text-green-600" />
+            <ArrowTrendingDownIcon className="h-6 w-6 text-green-600" />
             <h3 className="text-lg font-semibold">Savings Opportunities</h3>
           </div>
 
