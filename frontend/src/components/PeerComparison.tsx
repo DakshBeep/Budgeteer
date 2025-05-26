@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UsersIcon, ChartBarIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { buildApiUrl } from '../utils/api'
 
 interface PeerComparisonData {
   overall_percentile: number;
@@ -42,7 +43,7 @@ export default function PeerComparison() {
   const fetchPeerComparison = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/insights/peer-comparison`, {
+      const response = await fetch(buildApiUrl('/insights/peer-comparison'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -59,7 +60,7 @@ export default function PeerComparison() {
   const fetchSavingsOpportunities = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/insights/savings-opportunities`, {
+      const response = await fetch(buildApiUrl('/insights/savings-opportunities'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }

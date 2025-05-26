@@ -23,7 +23,7 @@ const DebugPanel = () => {
   const systemInfo = {
     mode: import.meta.env.MODE,
     baseUrl: import.meta.env.BASE_URL,
-    apiUrl: import.meta.env.VITE_API_BASE,
+    apiUrl: import.meta.env.VITE_API_BASE || '(using relative paths)',
     userAgent: navigator.userAgent,
     viewport: `${window.innerWidth} × ${window.innerHeight}`,
     screen: `${window.screen.width} × ${window.screen.height}`,

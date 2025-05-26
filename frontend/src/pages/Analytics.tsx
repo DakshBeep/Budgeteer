@@ -15,6 +15,7 @@ import {
   formatPercentage, CHART_COLORS, exportToCSV
 } from '../utils/analytics'
 import type { DateRange } from '../utils/analytics'
+import { buildApiUrl } from '../utils/api'
 
 interface SummaryData {
   total_income: number
@@ -103,27 +104,27 @@ const Analytics = () => {
         cashflowRes,
         patternsRes
       ] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/summary`, {
+        axios.get(buildApiUrl('/analytics/summary'), {
           params: { start_date: startDate, end_date: endDate },
           headers
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/category-breakdown`, {
+        axios.get(buildApiUrl('/analytics/category-breakdown'), {
           params: { start_date: startDate, end_date: endDate, type: categoryType },
           headers
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/trends`, {
+        axios.get(buildApiUrl('/analytics/trends'), {
           params: { start_date: startDate, end_date: endDate, interval: trendInterval },
           headers
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/budget-performance`, {
+        axios.get(buildApiUrl('/analytics/budget-performance'), {
           params: { start_date: startDate, end_date: endDate },
           headers
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/cashflow`, {
+        axios.get(buildApiUrl('/analytics/cashflow'), {
           params: { start_date: startDate, end_date: endDate },
           headers
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/analytics/patterns`, {
+        axios.get(buildApiUrl('/analytics/patterns'), {
           params: { start_date: startDate, end_date: endDate },
           headers
         })
@@ -157,7 +158,7 @@ const Analytics = () => {
       const prevStart = new Date(prevEnd)
       prevStart.setDate(prevStart.getDate() - daysDiff)
       
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE}/analytics/comparison`, {
+      const response = await axios.get(buildApiUrl('/analytics/comparison'), {
         params: {
           current_start: startDate,
           current_end: endDate,

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import IncomeExpenseToggle from './IncomeExpenseToggle'
 import CategorySelector, { categories } from './CategorySelector'
 import { formatCurrency, parseCurrency, formatCurrencyInput } from '../utils/currency'
+import { buildApiUrl } from '../utils/api'
 
 interface TransactionModalProps {
   isOpen: boolean
@@ -94,7 +95,7 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
       console.log('Using token:', token)
       
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE}/tx`,
+        buildApiUrl('/tx'),
         {
           tx_date: date,
           amount: finalAmount,

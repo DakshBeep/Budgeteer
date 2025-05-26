@@ -10,6 +10,7 @@ import SpendingChart from '../components/SpendingChart'
 import TransactionModal from '../components/TransactionModal'
 import QuickAddButtons from '../components/QuickAddButtons'
 import InsightsSummary from '../components/InsightsSummary'
+import { buildApiUrl } from '../utils/api'
 
 interface Transaction {
   id: number
@@ -58,10 +59,10 @@ const Dashboard = () => {
 
     try {
       const [txResponse, goalResponse] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_BASE}/tx`, {
+        axios.get(buildApiUrl('/tx'), {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE}/goal`, {
+        axios.get(buildApiUrl('/goal'), {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ])
