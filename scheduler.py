@@ -9,6 +9,7 @@ from database import engine
 from dbmodels import User, UserPreferences
 from insights_engine import InsightsGenerator
 from insights import generate_user_insights_task
+from email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class InsightScheduler:
     
     def __init__(self):
         self.running = False
+        self.email_service = EmailService()
         
     async def start(self):
         """Start the scheduler"""
@@ -94,8 +96,9 @@ class InsightScheduler:
                         should_send = True
                     
                     if should_send and "email" in prefs.notification_types:
-                        # TODO: Implement email sending
-                        logger.info(f"Would send digest email to user {user.id}")
+                        # Send digest email
+                        logger.info(f"Sending {prefs.email_digest_frequency} digest to user {user.id}")
+                        self.email_service.send_digest(session, user, prefs.email_digest_frequency)
                         
                 except Exception as e:
                     logger.error(f"Error processing digest for user {user.id}: {e}")

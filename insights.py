@@ -15,6 +15,8 @@ from dbmodels import (
 )
 from insights_engine import InsightsGenerator
 from dbmodels import User as UserSchema
+from email_service import EmailService
+from peer_comparison import PeerComparisonService
 
 
 router = APIRouter()
@@ -422,3 +424,70 @@ def get_notifications(
         
         notifications = session.exec(query).all()
         return notifications
+
+
+@router.post("/insights/send-test-digest")
+def send_test_digest(
+    period: str = Query("weekly", pattern="^(weekly|monthly)$"),
+    user: UserSchema = Depends(get_current_user)
+):
+    """Send a test digest email to the current user"""
+    email_service = EmailService()
+    
+    if not email_service.enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Email service is not configured. Please set SMTP environment variables."
+        )
+    
+    with Session(engine) as session:
+        # Get user with email
+        db_user = session.exec(
+            select(User).where(User.id == user.id)
+        ).first()
+        
+        if not db_user or not db_user.email:
+            raise HTTPException(
+                status_code=400,
+                detail="User email not found"
+            )
+        
+        # Send digest
+        success = email_service.send_digest(session, db_user, period)
+        
+        if success:
+            return {"message": f"Test {period} digest sent to {db_user.email}"}
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to send email digest"
+            )
+
+
+@router.get("/insights/peer-comparison")
+def get_peer_comparison(user: UserSchema = Depends(get_current_user)):
+    """Get user's spending compared to anonymized peer data"""
+    with Session(engine) as session:
+        comparison_service = PeerComparisonService(session)
+        
+        # Update benchmarks first (in production, this would be a scheduled job)
+        comparison_service.update_benchmarks()
+        
+        # Get user comparison
+        comparison = comparison_service.get_user_comparison(user.id)
+        
+        return comparison
+
+
+@router.get("/insights/savings-opportunities")
+def get_savings_opportunities(user: UserSchema = Depends(get_current_user)):
+    """Get personalized savings opportunities based on peer comparison"""
+    with Session(engine) as session:
+        comparison_service = PeerComparisonService(session)
+        opportunities = comparison_service.get_savings_opportunities(user.id)
+        
+        return {
+            "opportunities": opportunities,
+            "total_potential_monthly_savings": sum(o["potential_monthly_savings"] for o in opportunities),
+            "total_potential_annual_savings": sum(o["potential_annual_savings"] for o in opportunities)
+        }

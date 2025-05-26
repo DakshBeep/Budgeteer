@@ -11,9 +11,11 @@ import {
   ArrowRightIcon,
   XMarkIcon,
   CheckCircleIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
+import PeerComparison from '../components/PeerComparison';
 
 interface Insight {
   id: number;
@@ -62,6 +64,7 @@ const Insights = () => {
   const [whatIfReduction, setWhatIfReduction] = useState(20);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfScenario | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [activeSection, setActiveSection] = useState<'insights' | 'whatif' | 'peer'>('insights');
 
   useEffect(() => {
     fetchInsights();
@@ -295,8 +298,50 @@ const Insights = () => {
         </p>
       </div>
 
-      {/* Financial Health Score */}
-      {healthScore && (
+      {/* Section Tabs */}
+      <div className="bg-white rounded-lg shadow p-2 mb-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveSection('insights')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'insights'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <LightBulbIcon className="h-4 w-4 inline mr-2" />
+            Insights & Alerts
+          </button>
+          <button
+            onClick={() => setActiveSection('whatif')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'whatif'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <SparklesIcon className="h-4 w-4 inline mr-2" />
+            What-If Calculator
+          </button>
+          <button
+            onClick={() => setActiveSection('peer')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'peer'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <UsersIcon className="h-4 w-4 inline mr-2" />
+            Peer Comparison
+          </button>
+        </div>
+      </div>
+
+      {/* Insights Section */}
+      {activeSection === 'insights' && (
+        <>
+          {/* Financial Health Score */}
+          {healthScore && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -505,9 +550,12 @@ const Insights = () => {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* What-If Calculator */}
-      <motion.div
+      {activeSection === 'whatif' && (
+        <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-xl shadow-lg p-6"
@@ -599,6 +647,10 @@ const Insights = () => {
           </AnimatePresence>
         </div>
       </motion.div>
+      )}
+
+      {/* Peer Comparison */}
+      {activeSection === 'peer' && <PeerComparison />}
 
       {/* Insight Detail Modal */}
       <AnimatePresence>

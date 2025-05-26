@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Budgeteer App</title>
+</head>
+<body>
+    <h1>Testing Budgeteer App</h1>
+    <div id="status"></div>
+    <div id="content"></div>
+
+    <script>
+        async function testApp() {
+            const status = document.getElementById('status');
+            const content = document.getElementById('content');
+            
+            try {
+                // Test if frontend is accessible
+                const response = await fetch('http://localhost:5173/');
+                if (response.ok) {
+                    status.innerHTML = '<p style="color: green;">✅ Frontend is accessible at http://localhost:5173</p>';
+                    
+                    // Test API
+                    const apiResponse = await fetch('http://localhost:8000/');
+                    if (apiResponse.ok) {
+                        status.innerHTML += '<p style="color: green;">✅ Backend API is accessible at http://localhost:8000</p>';
+                    }
+                    
+                    content.innerHTML = `
+                        <h2>Everything is working!</h2>
+                        <p><strong>Click here to open the app:</strong> <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
+                        <h3>Test Credentials:</h3>
+                        <ul>
+                            <li>Username: test_user_1748199304</li>
+                            <li>Password: testpass123</li>
+                        </ul>
+                    `;
+                } else {
+                    status.innerHTML = '<p style="color: red;">❌ Frontend not accessible</p>';
+                }
+            } catch (error) {
+                status.innerHTML = '<p style="color: red;">❌ Error: ' + error.message + '</p>';
+            }
+        }
+        
+        testApp();
+    </script>
+</body>
+</html>
