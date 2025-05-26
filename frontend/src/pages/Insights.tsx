@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LightBulbIcon, 
@@ -6,14 +6,14 @@ import {
   ExclamationTriangleIcon,
   SparklesIcon,
   ChartBarIcon,
-  BellIcon,
-  CogIcon,
   ArrowRightIcon,
   XMarkIcon,
   CheckCircleIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
+import PeerComparison from '../components/PeerComparison';
 
 interface Insight {
   id: number;
@@ -21,7 +21,7 @@ interface Insight {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   title: string;
   description: string;
-  data: any;
+  data: Record<string, unknown>;
   action_url?: string;
   is_read: boolean;
   is_dismissed: boolean;
@@ -55,6 +55,7 @@ const Insights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [healthScore, setHealthScore] = useState<HealthScore | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);
@@ -62,21 +63,16 @@ const Insights = () => {
   const [whatIfReduction, setWhatIfReduction] = useState(20);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfScenario | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [activeSection, setActiveSection] = useState<'insights' | 'whatif' | 'peer'>('insights');
 
-  useEffect(() => {
-    fetchInsights();
-    fetchHealthScore();
-    // Trigger insight generation
-    generateInsights();
-  }, []);
-
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     try {
+      setError(null);
       const params = new URLSearchParams();
       if (selectedType !== 'all') params.append('type', selectedType);
       if (showUnreadOnly) params.append('is_read', 'false');
 
-      const response = await fetch(`http://localhost:8000/insights?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -94,17 +90,20 @@ const Insights = () => {
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 5000);
         }
+      } else {
+        throw new Error(`Failed to fetch insights: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching insights:', error);
+      setError('Failed to load insights. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, selectedType, showUnreadOnly]);
 
-  const fetchHealthScore = async () => {
+  const fetchHealthScore = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8000/insights/health-score', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/health-score`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -117,11 +116,11 @@ const Insights = () => {
     } catch (error) {
       console.error('Error fetching health score:', error);
     }
-  };
+  }, [token]);
 
-  const generateInsights = async () => {
+  const generateInsights = useCallback(async () => {
     try {
-      await fetch('http://localhost:8000/insights/generate', {
+      await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/generate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -130,11 +129,11 @@ const Insights = () => {
     } catch (error) {
       console.error('Error generating insights:', error);
     }
-  };
+  }, [token]);
 
   const markAsRead = async (insightId: number) => {
     try {
-      await fetch(`http://localhost:8000/insights/${insightId}/read`, {
+      await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/${insightId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -151,7 +150,7 @@ const Insights = () => {
 
   const dismissInsight = async (insightId: number) => {
     try {
-      await fetch(`http://localhost:8000/insights/${insightId}/dismiss`, {
+      await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/${insightId}/dismiss`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -168,7 +167,7 @@ const Insights = () => {
     if (!whatIfCategory) return;
 
     try {
-      const response = await fetch('http://localhost:8000/insights/what-if', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000'}/insights/what-if`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -235,10 +234,53 @@ const Insights = () => {
     "Other"
   ];
 
+  // Initial load
+  useEffect(() => {
+    if (token) {
+      fetchInsights();
+      fetchHealthScore();
+      // Trigger insight generation
+      generateInsights();
+    }
+  }, [token, fetchInsights, fetchHealthScore, generateInsights]);
+
+  // Reload when filters change
+  useEffect(() => {
+    if (token && !loading) {
+      fetchInsights();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType, showUnreadOnly]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <div className="flex items-center gap-3 mb-3">
+            <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+            <h3 className="text-lg font-semibold text-red-900">Error Loading Page</h3>
+          </div>
+          <p className="text-red-700 mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchInsights();
+              fetchHealthScore();
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -295,8 +337,50 @@ const Insights = () => {
         </p>
       </div>
 
-      {/* Financial Health Score */}
-      {healthScore && (
+      {/* Section Tabs */}
+      <div className="bg-white rounded-lg shadow p-2 mb-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveSection('insights')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'insights'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <LightBulbIcon className="h-4 w-4 inline mr-2" />
+            Insights & Alerts
+          </button>
+          <button
+            onClick={() => setActiveSection('whatif')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'whatif'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <SparklesIcon className="h-4 w-4 inline mr-2" />
+            What-If Calculator
+          </button>
+          <button
+            onClick={() => setActiveSection('peer')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'peer'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <UsersIcon className="h-4 w-4 inline mr-2" />
+            Peer Comparison
+          </button>
+        </div>
+      </div>
+
+      {/* Insights Section */}
+      {activeSection === 'insights' && (
+        <>
+          {/* Financial Health Score */}
+          {healthScore && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -505,9 +589,12 @@ const Insights = () => {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* What-If Calculator */}
-      <motion.div
+      {activeSection === 'whatif' && (
+        <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-xl shadow-lg p-6"
@@ -599,6 +686,10 @@ const Insights = () => {
           </AnimatePresence>
         </div>
       </motion.div>
+      )}
+
+      {/* Peer Comparison */}
+      {activeSection === 'peer' && <PeerComparison />}
 
       {/* Insight Detail Modal */}
       <AnimatePresence>

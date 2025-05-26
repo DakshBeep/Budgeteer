@@ -37,8 +37,8 @@ export const ErrorTestingPanel = () => {
     
     typeError: () => {
       // @ts-ignore
-      const obj = null;
-      obj.someMethod();
+      const obj: any = null;
+      obj!.someMethod();
     },
     
     referenceError: () => {

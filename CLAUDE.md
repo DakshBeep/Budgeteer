@@ -86,3 +86,26 @@ Tests use pytest with temporary SQLite databases for isolation. Key test areas:
 - Forecasting model outputs
 - Budget goal management
 - Edge cases (zero amounts, future dates, etc.)
+
+### Email Digest System
+
+The application includes an email digest system for sending financial summaries:
+
+1. **Email Service** (`email_service.py`)
+   - Sends HTML email digests with financial summaries
+   - Supports weekly and monthly digest frequencies
+   - Includes spending summaries, top categories, insights, and health scores
+   - Requires SMTP configuration via environment variables:
+     - `SMTP_HOST` (default: smtp.gmail.com)
+     - `SMTP_PORT` (default: 587)
+     - `SMTP_USER` (required)
+     - `SMTP_PASSWORD` (required)
+
+2. **Scheduler** (`scheduler.py`)
+   - Runs background tasks for insight generation and email sending
+   - Checks user preferences for digest frequency and quiet hours
+   - Integrated with the main FastAPI application
+
+3. **Testing Email Digests**
+   - Use the `/insights/send-test-digest` endpoint to manually trigger a digest email
+   - Pass `period=weekly` or `period=monthly` as query parameter
