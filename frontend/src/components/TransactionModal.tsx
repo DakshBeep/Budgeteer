@@ -29,13 +29,28 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
   const amountInputRef = useRef<HTMLInputElement>(null)
   const { token } = useAuth()
 
-  // Load last used category from localStorage
+  // Load last used category from localStorage or use initial
   useEffect(() => {
-    if (!initialCategory) {
+    if (initialCategory) {
+      setCategory(initialCategory)
+    } else {
       const lastCategory = localStorage.getItem('lastCategory_' + type) || (type === 'income' ? 'Income' : 'Food')
       setCategory(lastCategory)
     }
   }, [type, initialCategory])
+  
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset form when closing
+      setAmount('')
+      setNotes('')
+      setRecurring(false)
+      setError('')
+      setShowSuccess(false)
+      setDate(new Date().toISOString().split('T')[0])
+    }
+  }, [isOpen])
 
   // Focus on amount input when modal opens
   useEffect(() => {
