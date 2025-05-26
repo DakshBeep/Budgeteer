@@ -18,3 +18,4 @@ psycopg2-binary
 pytest>=7.0
 jinja2
 apscheduler
+numpy

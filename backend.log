@@ -975,3 +975,15 @@ INFO:     127.0.0.1:53958 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 O
 INFO:     127.0.0.1:53956 - "GET /insights?is_read=false&limit=3 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:53956 - "GET /insights/health-score HTTP/1.1" 200 OK
 INFO:     127.0.0.1:53958 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54253 - "POST /register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54255 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54257 - "POST /goal?amount=2000 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54259 - "POST /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54261 - "POST /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54263 - "POST /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54265 - "POST /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54267 - "POST /tx HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54269 - "POST /insights/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54271 - "GET /insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54273 - "GET /insights/health-score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54275 - "GET /analytics/summary HTTP/1.1" 422 Unprocessable Entity
