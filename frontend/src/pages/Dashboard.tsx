@@ -87,7 +87,7 @@ const Dashboard = () => {
       if (goalResponse.data) {
         setBudgetGoal(goalResponse.data)
         budgetRemaining = Math.max(0, goalResponse.data.amount - monthSpent)
-        percentUsed = (monthSpent / goalResponse.data.amount) * 100
+        percentUsed = goalResponse.data.amount > 0 ? (monthSpent / goalResponse.data.amount) * 100 : 0
       }
 
       setStats({
@@ -166,7 +166,7 @@ const Dashboard = () => {
             </div>
             <span className={`text-sm font-medium ${stats.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {stats.currentBalance >= 0 ? '+' : '-'}
-              {((Math.abs(stats.currentBalance) - Math.abs(stats.monthSpent)) / Math.abs(stats.monthSpent) * 100).toFixed(0)}%
+              {stats.monthSpent > 0 ? ((Math.abs(stats.currentBalance) - Math.abs(stats.monthSpent)) / Math.abs(stats.monthSpent) * 100).toFixed(0) : '0'}%
             </span>
           </div>
           <h3 className="text-sm font-medium text-gray-600">Current Balance</h3>
