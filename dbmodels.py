@@ -97,3 +97,71 @@ class SpendingBenchmark(SQLModel, table=True):
     average_percentage: float  # Average % of income spent on this category
     median_amount: float
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Enhanced Budget Management Models
+class BudgetPeriod(str, Enum):
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    YEARLY = "yearly"
+    CUSTOM = "custom"
+
+class BudgetTemplate(str, Enum):
+    BROKE_STUDENT = "broke_student"
+    FIRST_JOB = "first_job"
+    GRAD_STUDENT = "grad_student"
+    INTERN = "intern"
+    FREELANCER = "freelancer"
+    CUSTOM = "custom"
+
+class CategoryBudget(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    category: str  # Food, Transport, etc.
+    amount: float
+    period: BudgetPeriod = BudgetPeriod.MONTHLY
+    start_date: date
+    end_date: Optional[date] = None  # For custom periods
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class BudgetAlert(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    category_budget_id: Optional[int] = Field(foreign_key="categorybudget.id")
+    alert_threshold: float = 0.8  # Alert at 80% by default
+    is_enabled: bool = True
+    last_triggered: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SavingsGoal(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    name: str  # "Emergency Fund", "Spring Break Trip", etc.
+    target_amount: float
+    current_amount: float = 0.0
+    target_date: Optional[date] = None
+    category: str = "Savings"  # Links to transaction categories
+    auto_contribute: bool = False
+    auto_contribute_amount: Optional[float] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    achieved_at: Optional[datetime] = None
+
+class Bill(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    name: str  # "Rent", "Netflix", etc.
+    amount: float
+    category: str
+    due_day: int  # Day of month (1-31)
+    frequency: BudgetPeriod = BudgetPeriod.MONTHLY
+    is_autopay: bool = False
+    reminder_days_before: int = 3
+    last_paid: Optional[date] = None
+    next_due: Optional[date] = None
+    series_id: Optional[int] = Field(index=True)  # Links to recurring transactions
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)

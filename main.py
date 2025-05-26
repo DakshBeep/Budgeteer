@@ -103,6 +103,10 @@ app.include_router(forecast_router)
 app.include_router(analytics_router)
 app.include_router(insights_router)
 
+# Import and include budgets router
+from budgets import router as budgets_router
+app.include_router(budgets_router)
+
 @app.on_event("startup")
 async def startup_event() -> None:
     SQLModel.metadata.create_all(engine)
