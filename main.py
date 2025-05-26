@@ -29,7 +29,7 @@ from dbmodels import User, Tx, BudgetGoal
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Budgeteer API", version="1.0.0")
+app = FastAPI(title="CashBFF API", version="1.0.0")
 
 # Get allowed origins from environment or use defaults
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:8501").split(",")

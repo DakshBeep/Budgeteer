@@ -54,7 +54,7 @@ const AppLayout = () => {
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
                 <h1 className="ml-3 text-xl font-bold text-gray-900">
-                  Budgeteer
+                  CashBFF
                 </h1>
               </Link>
             </div>

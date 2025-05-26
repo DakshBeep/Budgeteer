@@ -11,7 +11,7 @@ setupGlobalErrorHandlers()
 // Check for common issues
 const issues = checkCommonIssues()
 if (issues.length > 0) {
-  console.warn('🚨 Budgeteer detected potential issues:', issues)
+  console.warn('🚨 CashBFF detected potential issues:', issues)
 }
 
 const rootElement = document.getElementById('root')
