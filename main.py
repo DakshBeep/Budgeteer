@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import SQLModel
 import logging
 import os
+import asyncio
 try:
     from dotenv import load_dotenv  # type: ignore
 except Exception:
@@ -114,10 +115,8 @@ app.include_router(recurring_router)
 @app.on_event("startup")
 async def startup_event() -> None:
     SQLModel.metadata.create_all(engine)
-    # Start the insight scheduler
-    from scheduler import start_scheduler
-    await start_scheduler()
-    logging.info("Started insight scheduler")
+    # Scheduler disabled for now to simplify deployment
+    logging.info("App started successfully")
 
 # Serve React static files (must be after API routes)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
