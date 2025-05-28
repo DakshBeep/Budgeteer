@@ -7,9 +7,14 @@ import logging
 from sqlmodel import Session, select
 from database import engine
 from dbmodels import User, UserPreferences
-from insights_engine import InsightsGenerator
-from insights import generate_user_insights_task
-from email_service import EmailService
+try:
+    from insights_engine import InsightsGenerator
+    from insights import generate_user_insights_task
+    from email_service import EmailService
+    INSIGHTS_AVAILABLE = True
+except ImportError:
+    INSIGHTS_AVAILABLE = False
+    logger.warning("Insights modules not available")
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +30,9 @@ class InsightScheduler:
         """Start the scheduler"""
         self.running = True
         logger.info("Insight scheduler started")
+        
+        # Wait a bit before starting to let the app initialize
+        await asyncio.sleep(30)
         
         while self.running:
             try:

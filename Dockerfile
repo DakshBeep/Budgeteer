@@ -31,13 +31,13 @@ COPY requirements-core.txt requirements.txt ./
 RUN pip install --no-cache-dir -r requirements-core.txt
 
 # Install ML libraries one by one to avoid memory spikes
-RUN pip install --no-cache-dir scikit-learn || echo "scikit-learn failed"
-RUN pip install --no-cache-dir catboost || echo "catboost failed" 
-RUN pip install --no-cache-dir neuralprophet || echo "neuralprophet failed"
-RUN pip install --no-cache-dir streamlit || echo "streamlit failed"
+RUN pip install --no-cache-dir scikit-learn || true
+RUN pip install --no-cache-dir catboost || true
+RUN pip install --no-cache-dir neuralprophet || true
+RUN pip install --no-cache-dir streamlit || true
 
 # Install remaining test dependencies
-RUN pip install --no-cache-dir pytest apscheduler || echo "test deps failed"
+RUN pip install --no-cache-dir pytest apscheduler || true
 
 # Copy application code
 COPY . .
