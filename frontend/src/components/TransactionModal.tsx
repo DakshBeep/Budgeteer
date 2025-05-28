@@ -13,15 +13,16 @@ interface TransactionModalProps {
   onSuccess?: () => void
   initialType?: 'income' | 'expense'
   initialCategory?: string
+  initialRecurring?: boolean
 }
 
-const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense', initialCategory }: TransactionModalProps) => {
+const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense', initialCategory, initialRecurring = false }: TransactionModalProps) => {
   const [type, setType] = useState<'income' | 'expense'>(initialType)
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState(initialCategory || '')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
-  const [recurring, setRecurring] = useState(false)
+  const [recurring, setRecurring] = useState(initialRecurring)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
@@ -45,12 +46,15 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, initialType = 'expense',
       // Reset form when closing
       setAmount('')
       setNotes('')
-      setRecurring(false)
+      setRecurring(initialRecurring)
       setError('')
       setShowSuccess(false)
       setDate(new Date().toISOString().split('T')[0])
+    } else {
+      // Set recurring when opening
+      setRecurring(initialRecurring)
     }
-  }, [isOpen])
+  }, [isOpen, initialRecurring])
 
   // Focus on amount input when modal opens
   useEffect(() => {
