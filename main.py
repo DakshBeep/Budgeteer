@@ -107,6 +107,10 @@ app.include_router(insights_router)
 from budgets import router as budgets_router
 app.include_router(budgets_router)
 
+# Import and include recurring router
+from recurring import router as recurring_router
+app.include_router(recurring_router)
+
 @app.on_event("startup")
 async def startup_event() -> None:
     SQLModel.metadata.create_all(engine)
