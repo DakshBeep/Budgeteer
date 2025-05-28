@@ -71,12 +71,16 @@ const Dashboard = () => {
       setTransactions(txData)
 
       // Calculate stats
+      const today = new Date().toISOString().split('T')[0]
       const currentMonth = new Date().toISOString().slice(0, 7)
-      const monthTransactions = txData.filter((tx: Transaction) => 
+      
+      // Only include transactions up to today for balance calculation
+      const pastTransactions = txData.filter((tx: Transaction) => tx.tx_date <= today)
+      const monthTransactions = pastTransactions.filter((tx: Transaction) => 
         tx.tx_date.startsWith(currentMonth)
       )
       
-      const totalBalance = txData.reduce((sum: number, tx: Transaction) => sum + tx.amount, 0)
+      const totalBalance = pastTransactions.reduce((sum: number, tx: Transaction) => sum + tx.amount, 0)
       const monthSpent = monthTransactions
         .filter((tx: Transaction) => tx.amount < 0)
         .reduce((sum: number, tx: Transaction) => sum + Math.abs(tx.amount), 0)
