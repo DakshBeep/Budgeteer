@@ -76,6 +76,15 @@ const RecurringExpenses = () => {
   const [showOnlyActive, setShowOnlyActive] = useState(true);
   const [savingExpense, setSavingExpense] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    amount: '',
+    category: 'other',
+    frequency: 'monthly',
+    next_date: new Date().toISOString().split('T')[0],
+    reminder_days: 3,
+    notes: ''
+  });
 
   // Fetch recurring expenses
   const fetchRecurringExpenses = useCallback(async () => {
@@ -155,6 +164,48 @@ const RecurringExpenses = () => {
   const getCategoryStyle = (category: string) => {
     const cat = recurringCategories.find(c => c.value === category);
     return cat?.color || 'gray';
+  };
+
+  const handleSaveRecurring = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingExpense(true);
+    
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Create the initial transaction with recurring flag
+      const txData = {
+        tx_date: formData.next_date,
+        amount: -Math.abs(parseFloat(formData.amount)), // Make negative for expense
+        label: formData.category === 'other' ? formData.name : 
+               recurringCategories.find(c => c.value === formData.category)?.label.split(' ').slice(1).join(' ') || formData.name,
+        notes: formData.name,
+        recurring: true
+      };
+      
+      await axios.post(buildApiUrl('/tx'), txData, { headers });
+      
+      // Reset form and close modal
+      setFormData({
+        name: '',
+        amount: '',
+        category: 'other',
+        frequency: 'monthly',
+        next_date: new Date().toISOString().split('T')[0],
+        reminder_days: 3,
+        notes: ''
+      });
+      setShowAddModal(false);
+      
+      // Refresh the list
+      await fetchRecurringExpenses();
+    } catch (err) {
+      console.error('Error creating recurring expense:', err);
+      setError('Failed to create recurring expense. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setSavingExpense(false);
+    }
   };
 
   const filteredExpenses = expenses.filter(expense => {
@@ -525,12 +576,12 @@ const RecurringExpenses = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Beautiful Add/Edit Modal */}
       {(showAddModal || editingExpense) && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
+            if (e.target === e.currentTarget && !savingExpense) {
               setShowAddModal(false);
               setEditingExpense(null);
             }
@@ -545,12 +596,7 @@ const RecurringExpenses = () => {
               {editingExpense ? 'Edit Recurring Expense' : 'Add Recurring Expense'}
             </h2>
             
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              // TODO: Implement save functionality
-              setShowAddModal(false);
-              setEditingExpense(null);
-            }}>
+            <form onSubmit={handleSaveRecurring}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -559,9 +605,10 @@ const RecurringExpenses = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Netflix, Gym, Phone Bill..."
+                    placeholder="Netflix, T-Mobile, Gym..."
                     className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    defaultValue={editingExpense?.name}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
@@ -578,7 +625,8 @@ const RecurringExpenses = () => {
                         required
                         placeholder="0.00"
                         className="w-full pl-7 rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                        defaultValue={editingExpense?.amount}
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                       />
                     </div>
                   </div>
@@ -590,7 +638,8 @@ const RecurringExpenses = () => {
                     <select
                       required
                       className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                      defaultValue={editingExpense?.frequency || 'monthly'}
+                      value={formData.frequency}
+                      onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
                     >
                       {frequencies.map(freq => (
                         <option key={freq.value} value={freq.value}>
@@ -608,7 +657,8 @@ const RecurringExpenses = () => {
                   <select
                     required
                     className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    defaultValue={editingExpense?.category || 'other'}
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   >
                     {recurringCategories.map(cat => (
                       <option key={cat.value} value={cat.value}>
@@ -626,7 +676,8 @@ const RecurringExpenses = () => {
                     type="date"
                     required
                     className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    defaultValue={editingExpense?.next_date?.split('T')[0] || new Date().toISOString().split('T')[0]}
+                    value={formData.next_date}
+                    onChange={(e) => setFormData({ ...formData, next_date: e.target.value })}
                   />
                 </div>
 
@@ -638,10 +689,13 @@ const RecurringExpenses = () => {
                     type="number"
                     min="0"
                     max="30"
-                    placeholder="3"
                     className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    defaultValue={editingExpense?.reminder_days || 3}
+                    value={formData.reminder_days}
+                    onChange={(e) => setFormData({ ...formData, reminder_days: parseInt(e.target.value) || 3 })}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    We'll remind you {formData.reminder_days} days before each charge
+                  </p>
                 </div>
 
                 <div>
@@ -652,7 +706,8 @@ const RecurringExpenses = () => {
                     rows={2}
                     placeholder="Any additional notes..."
                     className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    defaultValue={editingExpense?.notes}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   />
                 </div>
               </div>
@@ -664,15 +719,24 @@ const RecurringExpenses = () => {
                     setShowAddModal(false);
                     setEditingExpense(null);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  disabled={savingExpense}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  disabled={savingExpense}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {editingExpense ? 'Save Changes' : 'Add Expense'}
+                  {savingExpense ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    editingExpense ? 'Save Changes' : 'Add Expense'
+                  )}
                 </button>
               </div>
             </form>
