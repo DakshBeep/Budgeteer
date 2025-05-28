@@ -113,6 +113,21 @@ const RecurringExpenses = () => {
     fetchRecurringExpenses();
   }, [fetchRecurringExpenses]);
 
+  useEffect(() => {
+    if (editingExpense) {
+      setFormData({
+        name: editingExpense.name,
+        amount: Math.abs(editingExpense.amount).toString(),
+        category: mapBackendCategoryToFrontend(editingExpense.category || 'other'),
+        frequency: editingExpense.frequency || 'monthly',
+        next_date: editingExpense.next_date,
+        reminder_days: editingExpense.reminder_days || 3,
+        notes: editingExpense.notes || ''
+      });
+      setShowAddModal(true);
+    }
+  }, [editingExpense]);
+
   const calculateMonthlyAmount = (amount: number, frequency: string): number => {
     switch (frequency) {
       case 'daily': return amount * 30;
@@ -166,6 +181,29 @@ const RecurringExpenses = () => {
     return cat?.color || 'gray';
   };
 
+  const mapBackendCategoryToFrontend = (backendCategory: string): string => {
+    // Map backend category format to frontend values
+    const mappings: Record<string, string> = {
+      'phoneinternet': 'phone',
+      'phone&internet': 'phone',
+      'self-care': 'selfcare',
+      'selfcare': 'selfcare',
+      'fitness&wellness': 'fitness',
+      'fitnesswellness': 'fitness',
+      'education&loans': 'education',
+      'educationloans': 'education',
+      'familysupport': 'family',
+      'family support': 'family',
+      'transportation': 'transport',
+      'housing': 'housing',
+      'insurance': 'insurance',
+      'streaming': 'streaming'
+    };
+    
+    const normalized = backendCategory.toLowerCase().replace(/[^a-z]/g, '');
+    return mappings[normalized] || mappings[backendCategory.toLowerCase()] || 'other';
+  };
+
   const handleSaveRecurring = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingExpense(true);
@@ -173,17 +211,44 @@ const RecurringExpenses = () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
-      // Create the initial transaction with recurring flag
-      const txData = {
-        tx_date: formData.next_date,
-        amount: -Math.abs(parseFloat(formData.amount)), // Make negative for expense
-        label: formData.category === 'other' ? formData.name : 
-               recurringCategories.find(c => c.value === formData.category)?.label.split(' ').slice(1).join(' ') || formData.name,
-        notes: formData.name,
-        recurring: true
-      };
-      
-      await axios.post(buildApiUrl('/tx'), txData, { headers });
+      if (editingExpense) {
+        // For editing, we need to update all transactions in the series
+        // First, get all transactions with this series_id
+        const txResponse = await axios.get(buildApiUrl('/tx'), { headers });
+        const seriesTransactions = txResponse.data.filter((tx: any) => 
+          tx.series_id === editingExpense.series_id
+        );
+        
+        // Update each transaction in the series
+        const updateData = {
+          amount: -Math.abs(parseFloat(formData.amount)),
+          label: formData.category === 'other' ? formData.name : 
+                 recurringCategories.find(c => c.value === formData.category)?.label.split(' ').slice(1).join(' ') || formData.name,
+          notes: formData.name,
+          recurring: true
+        };
+        
+        // Update the first transaction with propagate=true to update all in series
+        if (seriesTransactions.length > 0) {
+          await axios.put(
+            buildApiUrl(`/tx/${seriesTransactions[0].id}?propagate=true`), 
+            { ...updateData, tx_date: seriesTransactions[0].tx_date },
+            { headers }
+          );
+        }
+      } else {
+        // Create new recurring transaction
+        const txData = {
+          tx_date: formData.next_date,
+          amount: -Math.abs(parseFloat(formData.amount)),
+          label: formData.category === 'other' ? formData.name : 
+                 recurringCategories.find(c => c.value === formData.category)?.label.split(' ').slice(1).join(' ') || formData.name,
+          notes: formData.name,
+          recurring: true
+        };
+        
+        await axios.post(buildApiUrl('/tx'), txData, { headers });
+      }
       
       // Reset form and close modal
       setFormData({
@@ -196,12 +261,13 @@ const RecurringExpenses = () => {
         notes: ''
       });
       setShowAddModal(false);
+      setEditingExpense(null);
       
       // Refresh the list
       await fetchRecurringExpenses();
     } catch (err) {
-      console.error('Error creating recurring expense:', err);
-      setError('Failed to create recurring expense. Please try again.');
+      console.error('Error saving recurring expense:', err);
+      setError(editingExpense ? 'Failed to update recurring expense. Please try again.' : 'Failed to create recurring expense. Please try again.');
       setTimeout(() => setError(null), 3000);
     } finally {
       setSavingExpense(false);
@@ -396,8 +462,9 @@ const RecurringExpenses = () => {
           <AnimatePresence>
             {filteredExpenses.map((expense) => {
               const daysUntil = getDaysUntilNext(expense.next_date);
-              const color = getCategoryStyle(expense.category);
-              const category = recurringCategories.find(c => c.value === expense.category);
+              const mappedCategory = mapBackendCategoryToFrontend(expense.category || 'other');
+              const color = getCategoryStyle(mappedCategory);
+              const category = recurringCategories.find(c => c.value === mappedCategory);
               
               return (
                 <motion.div
@@ -529,7 +596,8 @@ const RecurringExpenses = () => {
               .sort((a, b) => new Date(a.next_date).getTime() - new Date(b.next_date).getTime())
               .map((expense) => {
                 const daysUntil = getDaysUntilNext(expense.next_date);
-                const category = recurringCategories.find(c => c.value === expense.category);
+                const mappedCategory = mapBackendCategoryToFrontend(expense.category || 'other');
+                const category = recurringCategories.find(c => c.value === mappedCategory);
                 
                 return (
                   <div
