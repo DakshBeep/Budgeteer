@@ -59,7 +59,7 @@ const Dashboard = () => {
 
     try {
       const [txResponse, goalResponse] = await Promise.all([
-        axios.get(buildApiUrl('/tx'), {
+        axios.get(buildApiUrl('/tx?exclude_future=true'), {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(buildApiUrl('/goal'), {

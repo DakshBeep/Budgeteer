@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Plus, Search, Calendar, DollarSign, Tag, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Search, Calendar, DollarSign, Tag, Edit2, Trash2, Clock, History } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import TransactionModal from '../components/TransactionModal'
@@ -24,6 +24,7 @@ const Transactions = () => {
   const [modalCategory, setModalCategory] = useState<string | undefined>()
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'actual' | 'timeline'>('actual')
   const { token } = useAuth()
   const location = useLocation()
 
@@ -41,22 +42,35 @@ const Transactions = () => {
   }, [location])
 
   useEffect(() => {
-    const filtered = transactions.filter(tx =>
-      tx.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tx.notes && tx.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    let filtered = transactions
+    
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(tx =>
+        tx.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tx.notes && tx.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+    
+    // Filter by view mode
+    if (viewMode === 'actual') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      filtered = filtered.filter(tx => new Date(tx.tx_date) <= today)
+    }
+    
     setFilteredTransactions(filtered)
-  }, [searchTerm, transactions])
+  }, [searchTerm, transactions, viewMode])
 
   const fetchTransactions = async () => {
     if (!token) return
 
     try {
+      // Always fetch all transactions including future ones
       const response = await axios.get(buildApiUrl('/tx'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTransactions(response.data)
-      setFilteredTransactions(response.data)
     } catch (error) {
       console.error('Error fetching transactions:', error)
     } finally {
@@ -118,17 +132,48 @@ const Transactions = () => {
             </button>
           </div>
 
-          <div className="mb-8">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
+          <div className="mb-8 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search transactions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                />
+              </div>
+              
+              <button
+                onClick={() => setViewMode(viewMode === 'actual' ? 'timeline' : 'actual')}
+                className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all shadow-sm hover:shadow-md ${
+                  viewMode === 'timeline'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {viewMode === 'actual' ? (
+                  <>
+                    <History className="h-4 w-4 mr-2" />
+                    Actual Spending
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Full Timeline
+                  </>
+                )}
+              </button>
             </div>
+            
+            {viewMode === 'timeline' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Timeline View:</span> Showing all transactions including future scheduled payments. Future transactions don't affect your current budget.
+                </p>
+              </div>
+            )}
           </div>
 
 
@@ -160,10 +205,15 @@ const Transactions = () => {
                       {new Date(transaction.tx_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {transaction.label}
-                      {transaction.recurring && (
-                        <span className="ml-2 text-xs text-blue-600">(Recurring)</span>
-                      )}
+                      <div className="flex items-center">
+                        {transaction.label}
+                        {transaction.recurring && (
+                          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Recurring</span>
+                        )}
+                        {new Date(transaction.tx_date) > new Date() && (
+                          <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Scheduled</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {transaction.notes}
