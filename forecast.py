@@ -35,13 +35,28 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
         
         if not ML_AVAILABLE or len(running) < 7:
             # Simple linear projection if ML not available or insufficient data
-            if len(running) < 2:
-                return running.iloc[-1] if len(running) > 0 else 0
+            current_balance = running.iloc[-1] if len(running) > 0 else 0
             
-            # Calculate average daily change over last 7 days
-            recent_days = min(7, len(running) - 1)
-            daily_change = (running.iloc[-1] - running.iloc[-recent_days-1]) / recent_days
-            return running.iloc[-1] + (daily_change * days)
+            if len(running) < 2:
+                # No change if insufficient data
+                daily_change = 0
+            else:
+                # Calculate average daily change over last 7 days
+                recent_days = min(7, len(running) - 1)
+                daily_change = (running.iloc[-1] - running.iloc[-recent_days-1]) / recent_days
+            
+            # Generate predictions for each day
+            preds = []
+            future_dates = pd.date_range(date.today(), periods=days)
+            
+            for i in range(days):
+                predicted_balance = current_balance + (daily_change * (i + 1))
+                preds.append(predicted_balance)
+            
+            return [
+                {"tx_date": d.isoformat(), "predicted_balance": float(p)}
+                for d, p in zip(future_dates, preds)
+            ]
         
         idx = (pd.to_datetime(running.index) - pd.Timestamp(base)).days.values.reshape(
             -1, 1
