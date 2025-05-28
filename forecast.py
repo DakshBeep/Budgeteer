@@ -74,8 +74,12 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
             reg.fit(idx, running.values)
             preds = reg.predict(future_idx)
         elif model == "catboost":
+            if not ML_AVAILABLE:
+                raise HTTPException(status_code=503, detail="CatBoost model not available - ML libraries not installed")
             preds = catboost_predict(idx, running.values, future_idx)
         elif model == "neuralprophet":
+            if not ML_AVAILABLE:
+                raise HTTPException(status_code=503, detail="NeuralProphet model not available - ML libraries not installed")
             preds = neuralprophet_predict(running, future_dates)
         elif model == "mc":
             daily = running.diff().fillna(running.iloc[0])

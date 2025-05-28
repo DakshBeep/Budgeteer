@@ -1,19 +1,4 @@
-# Build React frontend
-FROM node:18-alpine AS frontend-build
-WORKDIR /app/frontend
-
-# Copy package files for better caching
-COPY frontend/package*.json ./
-RUN npm install
-
-# Copy frontend source and build
-COPY frontend/ ./
-# Set the API base to use relative paths in production
-# This allows the frontend to work with the same domain
-ENV VITE_API_BASE=""
-RUN npm run build
-
-# Python backend + serve React
+# Simplified single-stage build for Railway
 FROM python:3.11-slim
 
 # Install system dependencies
@@ -24,26 +9,16 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy and install Python dependencies in stages to reduce memory usage
-COPY requirements-core.txt requirements.txt ./
-
-# Install core dependencies first
-RUN pip install --no-cache-dir -r requirements-core.txt
-
-# Install ML libraries one by one to avoid memory spikes
-RUN pip install --no-cache-dir scikit-learn || true
-RUN pip install --no-cache-dir catboost || true
-RUN pip install --no-cache-dir neuralprophet || true
-RUN pip install --no-cache-dir streamlit || true
-
-# Install remaining test dependencies
-RUN pip install --no-cache-dir pytest apscheduler || true
+# Copy and install only essential dependencies
+COPY requirements-minimal.txt .
+RUN pip install --no-cache-dir -r requirements-minimal.txt
 
 # Copy application code
-COPY . .
+COPY *.py ./
+COPY start.sh ./
 
-# Copy built frontend from previous stage
-COPY --from=frontend-build /app/frontend/dist ./static
+# Copy optional modules directory if it exists
+COPY models/ ./models/ || true
 
 # Create directory for SQLite database (if using SQLite)
 RUN mkdir -p /app/data
