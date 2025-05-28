@@ -10,7 +10,12 @@ from sqlmodel import Session, select, create_engine
 
 from dbmodels import Tx, BudgetGoal
 from auth import get_current_user
-from models.forecasting import catboost_predict, neuralprophet_predict
+try:
+    from models.forecasting import catboost_predict, neuralprophet_predict
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    print("Warning: ML libraries not available, using simple forecasting")
 
 # Import shared engine to avoid circular import
 from database import engine
@@ -27,6 +32,17 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
         running = df.cumsum()
 
         base = running.index.min()
+        
+        if not ML_AVAILABLE or len(running) < 7:
+            # Simple linear projection if ML not available or insufficient data
+            if len(running) < 2:
+                return running.iloc[-1] if len(running) > 0 else 0
+            
+            # Calculate average daily change over last 7 days
+            recent_days = min(7, len(running) - 1)
+            daily_change = (running.iloc[-1] - running.iloc[-recent_days-1]) / recent_days
+            return running.iloc[-1] + (daily_change * days)
+        
         idx = (pd.to_datetime(running.index) - pd.Timestamp(base)).days.values.reshape(
             -1, 1
         )

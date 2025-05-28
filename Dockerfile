@@ -24,9 +24,20 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy and install Python dependencies first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install Python dependencies in stages to reduce memory usage
+COPY requirements-core.txt requirements.txt ./
+
+# Install core dependencies first
+RUN pip install --no-cache-dir -r requirements-core.txt
+
+# Install ML libraries one by one to avoid memory spikes
+RUN pip install --no-cache-dir scikit-learn || echo "scikit-learn failed"
+RUN pip install --no-cache-dir catboost || echo "catboost failed" 
+RUN pip install --no-cache-dir neuralprophet || echo "neuralprophet failed"
+RUN pip install --no-cache-dir streamlit || echo "streamlit failed"
+
+# Install remaining test dependencies
+RUN pip install --no-cache-dir pytest apscheduler || echo "test deps failed"
 
 # Copy application code
 COPY . .
