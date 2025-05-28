@@ -10,6 +10,7 @@ import Budget from './pages/Budget'
 import Analytics from './pages/Analytics'
 import Insights from './pages/Insights'
 import Settings from './pages/Settings'
+import RecurringExpenses from './pages/RecurringExpenses'
 import DebugPanel from './components/DebugPanel'
 import { ErrorTestingPanel } from './utils/errorTesting'
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budget" element={<Budget />} />
+            <Route path="/recurring" element={<RecurringExpenses />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/calendar" element={<div className="min-h-full"><div className="py-8 px-4 sm:px-6 lg:px-8"><div className="max-w-7xl mx-auto"><h1 className="text-3xl font-bold text-gray-900">Calendar</h1><p className="mt-2 text-base text-gray-600">Calendar view coming soon!</p></div></div></div>} />
