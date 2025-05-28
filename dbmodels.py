@@ -7,6 +7,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
     password_hash: str
+    email: Optional[str] = Field(default=None, unique=True)
 
 class Tx(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -96,6 +97,7 @@ class SpendingBenchmark(SQLModel, table=True):
     user_demographic: Optional[str] = None  # e.g., "student", "young_professional"
     average_percentage: float  # Average % of income spent on this category
     median_amount: float
+    benchmark_data: dict = Field(sa_column=Column(JSON))  # Store detailed benchmark data
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 # Enhanced Budget Management Models
