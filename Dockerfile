@@ -17,18 +17,14 @@ RUN pip install --no-cache-dir -r requirements-minimal.txt
 COPY *.py ./
 COPY start.sh ./
 
-# Copy optional modules directory if it exists
-COPY models/ ./models/ || true
+# Copy models directory
+COPY models/ ./models/
 
 # Create directory for SQLite database (if using SQLite)
 RUN mkdir -p /app/data
 
 # Make start script executable
 RUN chmod +x start.sh
-
-# Verify the build
-RUN ls -la static/ || echo "No static directory found"
-RUN ls -la start.sh || echo "No start.sh found"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
