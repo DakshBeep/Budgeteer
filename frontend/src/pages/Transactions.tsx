@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Plus, Search, Calendar, DollarSign, Tag, Edit2, Trash2, Clock } from 'lucide-react'
+import { Plus, Search, Calendar, DollarSign, Tag, Edit2, Trash2, Clock, History } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import TransactionModal from '../components/TransactionModal'
@@ -24,7 +24,7 @@ const Transactions = () => {
   const [modalCategory, setModalCategory] = useState<string | undefined>()
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showFutureTransactions, setShowFutureTransactions] = useState(false)
+  const [viewMode, setViewMode] = useState<'actual' | 'timeline'>('actual')
   const { token } = useAuth()
   const location = useLocation()
 
@@ -42,22 +42,35 @@ const Transactions = () => {
   }, [location])
 
   useEffect(() => {
-    const filtered = transactions.filter(tx =>
-      tx.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tx.notes && tx.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    let filtered = transactions
+    
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(tx =>
+        tx.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tx.notes && tx.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+    
+    // Filter by view mode
+    if (viewMode === 'actual') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      filtered = filtered.filter(tx => new Date(tx.tx_date) <= today)
+    }
+    
     setFilteredTransactions(filtered)
-  }, [searchTerm, transactions])
+  }, [searchTerm, transactions, viewMode])
 
   const fetchTransactions = async () => {
     if (!token) return
 
     try {
+      // Always fetch all transactions including future ones
       const response = await axios.get(buildApiUrl('/tx'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTransactions(response.data)
-      setFilteredTransactions(response.data)
     } catch (error) {
       console.error('Error fetching transactions:', error)
     } finally {
@@ -119,8 +132,8 @@ const Transactions = () => {
             </button>
           </div>
 
-          <div className="mb-8">
-            <div className="flex gap-4 items-start">
+          <div className="mb-8 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
@@ -132,34 +145,35 @@ const Transactions = () => {
                 />
               </div>
               
-              {/* Future transactions toggle */}
-              {(() => {
-                const today = new Date().toISOString().split('T')[0]
-                const futureCount = transactions.filter(tx => tx.tx_date > today && tx.recurring).length
-                
-                if (futureCount > 0) {
-                  return (
-                    <button
-                      onClick={() => setShowFutureTransactions(!showFutureTransactions)}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all ${
-                        showFutureTransactions 
-                          ? 'bg-blue-50 border-blue-300 text-blue-700' 
-                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Clock className="h-5 w-5" />
-                      <span className="font-medium">
-                        {showFutureTransactions ? 'Hide' : 'Show'} Future
-                      </span>
-                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">
-                        {futureCount}
-                      </span>
-                    </button>
-                  )
-                }
-                return null
-              })()}
+              <button
+                onClick={() => setViewMode(viewMode === 'actual' ? 'timeline' : 'actual')}
+                className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all shadow-sm hover:shadow-md ${
+                  viewMode === 'timeline'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {viewMode === 'actual' ? (
+                  <>
+                    <History className="h-4 w-4 mr-2" />
+                    Actual Spending
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Full Timeline
+                  </>
+                )}
+              </button>
             </div>
+            
+            {viewMode === 'timeline' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Timeline View:</span> Showing all transactions including future scheduled payments. Future transactions don't affect your current budget.
+                </p>
+              </div>
+            )}
           </div>
 
 
@@ -185,116 +199,48 @@ const Transactions = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transactions
-                  .filter(transaction => {
-                    // First filter by search term
-                    const matchesSearch = transaction.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      (transaction.notes && transaction.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-                    
-                    if (!matchesSearch) return false
-                    
-                    // Then filter by date based on toggle
-                    const today = new Date().toISOString().split('T')[0]
-                    const isFuture = transaction.tx_date > today
-                    
-                    // If not showing future, exclude future transactions
-                    if (!showFutureTransactions && isFuture) return false
-                    
-                    // If showing future, include all
-                    return true
-                  })
-                  .map(transaction => {
-                    const today = new Date().toISOString().split('T')[0]
-                    const isToday = transaction.tx_date === today
-                    const isFuture = transaction.tx_date > today
-                    
-                    return (
-                      <tr key={transaction.id} className={isFuture ? 'bg-blue-50/30 hover:bg-blue-50/50 transition-colors' : 'hover:bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center gap-2">
-                            {isFuture && (
-                              <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                                <Clock className="h-3 w-3" />
-                                <span>Scheduled</span>
-                              </div>
-                            )}
-                            {new Date(transaction.tx_date).toLocaleDateString()}
-                            {isToday && <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1">Today</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.label}
-                          {transaction.recurring && (
-                            <span className="ml-2 text-xs text-blue-600">(Recurring)</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {transaction.notes}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {transaction.amount >= 0 ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleEdit(transaction)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(transaction.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(transaction.tx_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <div className="flex items-center">
+                        {transaction.label}
+                        {transaction.recurring && (
+                          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Recurring</span>
+                        )}
+                        {new Date(transaction.tx_date) > new Date() && (
+                          <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Scheduled</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {transaction.notes}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                      transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.amount >= 0 ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleEdit(transaction)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(transaction.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-            
-            {/* Empty state */}
-            {transactions.length === 0 && (
-              <div className="text-center py-12">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h3>
-                <p className="text-gray-600 mb-6">Start tracking your money by adding your first transaction!</p>
-                <button
-                  onClick={handleAddClick}
-                  className="inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add Your First Transaction
-                </button>
-              </div>
-            )}
-            
-            {/* Hidden future transactions notice */}
-            {!showFutureTransactions && (() => {
-              const today = new Date().toISOString().split('T')[0]
-              const hiddenCount = transactions.filter(tx => tx.tx_date > today && tx.recurring).length
-              if (hiddenCount > 0) {
-                return (
-                  <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
-                        {hiddenCount} future recurring {hiddenCount === 1 ? 'transaction' : 'transactions'} hidden
-                      </p>
-                      <button
-                        onClick={() => setShowFutureTransactions(true)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Show future →
-                      </button>
-                    </div>
-                  </div>
-                )
-              }
-              return null
-            })()}
           </div>
 
           {/* Transaction Modal */}

@@ -80,10 +80,16 @@ def add_tx(tx_in: TxIn, user=Depends(get_current_user)) -> Tx:
 
 
 @router.get("/tx", response_model=List[Tx])
-def list_tx(user=Depends(get_current_user)) -> List[Tx]:
+def list_tx(exclude_future: bool = False, user=Depends(get_current_user)) -> List[Tx]:
     with Session(engine) as s:
         _extend_recurring(user, s)
-        stmt = select(Tx).where(Tx.user_id == user.id).order_by(Tx.tx_date.desc())
+        stmt = select(Tx).where(Tx.user_id == user.id)
+        
+        if exclude_future:
+            today = date.today()
+            stmt = stmt.where(Tx.tx_date <= today)
+        
+        stmt = stmt.order_by(Tx.tx_date.desc())
         return s.exec(stmt).all()
 
 
