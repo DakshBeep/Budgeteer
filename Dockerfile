@@ -20,9 +20,6 @@ COPY start.sh ./
 # Copy models directory
 COPY models/ ./models/
 
-# Copy frontend static files for serving
-COPY frontend/dist/ ./static/
-
 # Create directory for SQLite database (if using SQLite)
 RUN mkdir -p /app/data
 
