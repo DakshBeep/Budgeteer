@@ -3,6 +3,8 @@ Minimal FastAPI app for Railway deployment
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlmodel import SQLModel
 import logging
 import os
@@ -73,15 +75,53 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "message": "CashBFF API",
-        "docs": "/docs",
-        "health": "/health",
-        "version": "1.0.0"
-    }
+# Serve static files
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(static_dir):
+    # Fallback to frontend/dist for local development
+    alt_static_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+    if os.path.exists(alt_static_dir):
+        static_dir = alt_static_dir
+        logger.info(f"Using alternative static directory: {static_dir}")
+
+if os.path.exists(static_dir):
+    # Mount assets directory
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        logger.info(f"Mounted assets directory: {assets_dir}")
+    
+    # Serve index.html for root and all unmatched routes
+    @app.get("/")
+    async def serve_root():
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"message": "CashBFF API", "docs": "/docs", "health": "/health"}
+    
+    # Catch-all route for React Router
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Don't catch API routes
+        if full_path.startswith("api/") or full_path in ["docs", "openapi.json", "health"]:
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        raise HTTPException(status_code=404, detail="Not found")
+else:
+    logger.warning(f"Static directory not found: {static_dir}")
+    
+    @app.get("/")
+    async def root():
+        """Root endpoint when no static files"""
+        return {
+            "message": "CashBFF API",
+            "docs": "/docs",
+            "health": "/health",
+            "version": "1.0.0"
+        }
 
 if __name__ == "__main__":
     import uvicorn
