@@ -28,6 +28,7 @@ interface RecurringExpense {
   is_active: boolean;
   reminder_days?: number;
   notes?: string;
+  series_id: number;
   color?: string;
   icon?: string;
 }
