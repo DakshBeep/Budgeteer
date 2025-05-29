@@ -1,4 +1,18 @@
-# Simplified single-stage build for Railway
+# Build React frontend
+FROM node:18-alpine AS frontend-build
+WORKDIR /app/frontend
+
+# Copy package files for better caching
+COPY frontend/package*.json ./
+RUN npm install
+
+# Copy frontend source and build
+COPY frontend/ ./
+# Set the API base to use relative paths in production
+ENV VITE_API_BASE=""
+RUN npm run build
+
+# Python backend + serve React
 FROM python:3.11-slim
 
 # Install system dependencies
@@ -20,8 +34,8 @@ COPY start.sh ./
 # Copy models directory
 COPY models/ ./models/
 
-# Copy frontend static files for serving
-COPY frontend/dist/ ./static/
+# Copy built frontend from previous stage
+COPY --from=frontend-build /app/frontend/dist ./static
 
 # Create directory for SQLite database (if using SQLite)
 RUN mkdir -p /app/data

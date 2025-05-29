@@ -77,13 +77,6 @@ async def health_check():
 
 # Serve static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-if not os.path.exists(static_dir):
-    # Fallback to frontend/dist for local development
-    alt_static_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
-    if os.path.exists(alt_static_dir):
-        static_dir = alt_static_dir
-        logger.info(f"Using alternative static directory: {static_dir}")
-
 if os.path.exists(static_dir):
     # Mount assets directory
     assets_dir = os.path.join(static_dir, "assets")
