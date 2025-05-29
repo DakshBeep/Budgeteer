@@ -36,6 +36,9 @@ from auth import router as auth_router
 from transactions import router as transactions_router
 from forecast import router as forecast_router
 from recurring import router as recurring_router
+from analytics import router as analytics_router
+from insights import router as insights_router
+from budgets import router as budgets_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -57,7 +60,10 @@ app.add_middleware(
 app.include_router(auth_router, tags=["auth"])
 app.include_router(transactions_router, tags=["transactions"])
 app.include_router(forecast_router, tags=["forecast"])
-app.include_router(recurring_router, prefix="/recurring", tags=["recurring"])
+app.include_router(analytics_router, tags=["analytics"])
+app.include_router(insights_router, tags=["insights"])
+app.include_router(budgets_router, tags=["budgets"])
+app.include_router(recurring_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -77,6 +83,13 @@ async def health_check():
 
 # Serve static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(static_dir):
+    # Fallback to frontend/dist for local development
+    alt_static_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+    if os.path.exists(alt_static_dir):
+        static_dir = alt_static_dir
+        logger.info(f"Using alternative static directory: {static_dir}")
+
 if os.path.exists(static_dir):
     # Mount assets directory
     assets_dir = os.path.join(static_dir, "assets")
@@ -96,7 +109,19 @@ if os.path.exists(static_dir):
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # Don't catch API routes
-        if full_path.startswith("api/") or full_path in ["docs", "openapi.json", "health"]:
+        if (full_path.startswith("api/") or 
+            full_path.startswith("auth/") or
+            full_path.startswith("tx") or
+            full_path.startswith("goal") or
+            full_path.startswith("forecast") or
+            full_path.startswith("analytics") or
+            full_path.startswith("insights") or
+            full_path.startswith("budgets") or
+            full_path.startswith("recurring") or
+            full_path.startswith("bills") or
+            full_path.startswith("savings") or
+            full_path.startswith("reminders") or
+            full_path in ["docs", "redoc", "openapi.json", "health", "login", "register", "me"]):
             raise HTTPException(status_code=404, detail="Not found")
         
         index_path = os.path.join(static_dir, "index.html")
