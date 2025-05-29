@@ -43,9 +43,9 @@ class PeerComparisonService:
                         Tx.user_id,
                         func.sum(func.abs(Tx.amount)).label("total")
                     ).where(
-                        Tx.date >= start_date,
-                        Tx.date <= end_date,
-                        Tx.category == category,
+                        Tx.tx_date >= start_date,
+                        Tx.tx_date <= end_date,
+                        Tx.label == category,
                         Tx.amount < 0
                     ).group_by(Tx.user_id)
                 ).all()
@@ -84,23 +84,25 @@ class PeerComparisonService:
                 existing = self.session.exec(
                     select(SpendingBenchmark).where(
                         SpendingBenchmark.category == category,
-                        SpendingBenchmark.demographic == demographic,
-                        SpendingBenchmark.period == "monthly"
+                        SpendingBenchmark.user_demographic == demographic
                     )
                 ).first()
                 
                 if existing:
                     # Update existing benchmark
+                    existing.average_percentage = benchmark_data["mean"] / 1000 * 100  # Rough estimate
+                    existing.median_amount = benchmark_data["median"]
                     existing.benchmark_data = benchmark_data
-                    existing.calculated_at = datetime.utcnow()
+                    existing.updated_at = datetime.utcnow()
                 else:
                     # Create new benchmark
                     benchmark = SpendingBenchmark(
                         category=category,
-                        demographic=demographic,
-                        period="monthly",
+                        user_demographic=demographic,
+                        average_percentage=benchmark_data["mean"] / 1000 * 100,  # Rough estimate
+                        median_amount=benchmark_data["median"],
                         benchmark_data=benchmark_data,
-                        calculated_at=datetime.utcnow()
+                        updated_at=datetime.utcnow()
                     )
                     self.session.add(benchmark)
             
@@ -120,14 +122,14 @@ class PeerComparisonService:
             
             user_spending = self.session.exec(
                 select(
-                    Tx.category,
+                    Tx.label,
                     func.sum(func.abs(Tx.amount)).label("total")
                 ).where(
                     Tx.user_id == user_id,
-                    Tx.date >= start_date,
-                    Tx.date <= end_date,
+                    Tx.tx_date >= start_date,
+                    Tx.tx_date <= end_date,
                     Tx.amount < 0
-                ).group_by(Tx.category)
+                ).group_by(Tx.label)
             ).all()
             
             comparisons = []
@@ -140,8 +142,7 @@ class PeerComparisonService:
                 benchmark = self.session.exec(
                     select(SpendingBenchmark).where(
                         SpendingBenchmark.category == category,
-                        SpendingBenchmark.demographic == "all_users",
-                        SpendingBenchmark.period == "monthly"
+                        SpendingBenchmark.user_demographic == "all_users"
                     )
                 ).first()
                 

@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import SQLModel
 import logging
 import os
+import asyncio
 try:
     from dotenv import load_dotenv  # type: ignore
 except Exception:
@@ -28,6 +29,11 @@ from dbmodels import User, Tx, BudgetGoal
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
+
+# Validate required environment variables
+if not os.getenv("JWT_SECRET"):
+    logging.error("JWT_SECRET environment variable is required")
+    raise ValueError("JWT_SECRET environment variable is required")
 
 app = FastAPI(title="CashBFF API", version="1.0.0")
 
@@ -114,15 +120,20 @@ app.include_router(recurring_router)
 @app.on_event("startup")
 async def startup_event() -> None:
     SQLModel.metadata.create_all(engine)
-    # Start the insight scheduler
-    from scheduler import start_scheduler
-    await start_scheduler()
-    logging.info("Started insight scheduler")
+    # Scheduler disabled for now to simplify deployment
+    logging.info("App started successfully")
 
 # Serve React static files (must be after API routes)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 logging.info(f"Looking for static files in: {static_dir}")
 logging.info(f"Static directory exists: {os.path.exists(static_dir)}")
+
+# Fallback to frontend/dist for local development
+if not os.path.exists(static_dir):
+    alt_static_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+    if os.path.exists(alt_static_dir):
+        static_dir = alt_static_dir
+        logging.info(f"Using alternative static directory: {static_dir}")
 
 if os.path.exists(static_dir):
     # Check if assets directory exists

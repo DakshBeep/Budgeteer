@@ -9,7 +9,6 @@ RUN npm install
 # Copy frontend source and build
 COPY frontend/ ./
 # Set the API base to use relative paths in production
-# This allows the frontend to work with the same domain
 ENV VITE_API_BASE=""
 RUN npm run build
 
@@ -24,12 +23,16 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy and install Python dependencies first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install only essential dependencies
+COPY requirements-minimal.txt .
+RUN pip install --no-cache-dir -r requirements-minimal.txt
 
 # Copy application code
-COPY . .
+COPY *.py ./
+COPY start.sh ./
+
+# Copy models directory
+COPY models/ ./models/
 
 # Copy built frontend from previous stage
 COPY --from=frontend-build /app/frontend/dist ./static
@@ -39,10 +42,6 @@ RUN mkdir -p /app/data
 
 # Make start script executable
 RUN chmod +x start.sh
-
-# Verify the build
-RUN ls -la static/ || echo "No static directory found"
-RUN ls -la start.sh || echo "No start.sh found"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

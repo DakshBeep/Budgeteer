@@ -9,8 +9,21 @@ if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "sqlite:///budgeteer.db" ]; the
     export DATABASE_URL="sqlite:////app/data/budgeteer.db"
 fi
 
-echo "Starting Budgeteer on port $PORT"
-echo "Using database: $DATABASE_URL"
+# Set JWT_SECRET if not provided
+if [ -z "$JWT_SECRET" ]; then
+    export JWT_SECRET="railway-default-secret-change-in-production"
+    echo "WARNING: Using default JWT_SECRET. Set JWT_SECRET env var in production!"
+fi
 
-# Start uvicorn with the correct port
-exec uvicorn main:app --host 0.0.0.0 --port $PORT
+echo "Starting CashBFF on port $PORT"
+echo "Using database: $DATABASE_URL"
+echo "Environment: ${RAILWAY_ENVIRONMENT:-development}"
+
+# Check if main_minimal.py exists (for simplified deployment)
+if [ -f "main_minimal.py" ]; then
+    echo "Using minimal configuration"
+    exec uvicorn main_minimal:app --host 0.0.0.0 --port $PORT
+else
+    # Start uvicorn with the regular main app
+    exec uvicorn main:app --host 0.0.0.0 --port $PORT
+fi

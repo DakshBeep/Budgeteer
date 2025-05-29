@@ -10,7 +10,12 @@ from sqlmodel import Session, select, create_engine
 
 from dbmodels import Tx, BudgetGoal
 from auth import get_current_user
-from models.forecasting import catboost_predict, neuralprophet_predict
+try:
+    from models.forecasting import catboost_predict, neuralprophet_predict
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    print("Warning: ML libraries not available, using simple forecasting")
 
 # Import shared engine to avoid circular import
 from database import engine
@@ -27,6 +32,32 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
         running = df.cumsum()
 
         base = running.index.min()
+        
+        if not ML_AVAILABLE or len(running) < 7:
+            # Simple linear projection if ML not available or insufficient data
+            current_balance = running.iloc[-1] if len(running) > 0 else 0
+            
+            if len(running) < 2:
+                # No change if insufficient data
+                daily_change = 0
+            else:
+                # Calculate average daily change over last 7 days
+                recent_days = min(7, len(running) - 1)
+                daily_change = (running.iloc[-1] - running.iloc[-recent_days-1]) / recent_days
+            
+            # Generate predictions for each day
+            preds = []
+            future_dates = pd.date_range(date.today(), periods=days)
+            
+            for i in range(days):
+                predicted_balance = current_balance + (daily_change * (i + 1))
+                preds.append(predicted_balance)
+            
+            return [
+                {"tx_date": d.isoformat(), "predicted_balance": float(p)}
+                for d, p in zip(future_dates, preds)
+            ]
+        
         idx = (pd.to_datetime(running.index) - pd.Timestamp(base)).days.values.reshape(
             -1, 1
         )
@@ -43,8 +74,12 @@ def _forecast_cached(user_id: int, days: int, model: str, last_ts: float):
             reg.fit(idx, running.values)
             preds = reg.predict(future_idx)
         elif model == "catboost":
+            if not ML_AVAILABLE:
+                raise HTTPException(status_code=503, detail="CatBoost model not available - ML libraries not installed")
             preds = catboost_predict(idx, running.values, future_idx)
         elif model == "neuralprophet":
+            if not ML_AVAILABLE:
+                raise HTTPException(status_code=503, detail="NeuralProphet model not available - ML libraries not installed")
             preds = neuralprophet_predict(running, future_dates)
         elif model == "mc":
             daily = running.diff().fillna(running.iloc[0])
