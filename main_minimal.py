@@ -54,7 +54,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(auth_router, tags=["auth"])
 app.include_router(transactions_router, tags=["transactions"])
 app.include_router(forecast_router, tags=["forecast"])
 app.include_router(recurring_router, prefix="/recurring", tags=["recurring"])
